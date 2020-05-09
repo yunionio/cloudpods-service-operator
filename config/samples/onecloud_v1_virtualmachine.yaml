@@ -1,0 +1,18 @@
+apiVersion: onecloud.yunion.io/v1
+kind: VirtualMachine
+metadata:
+  name: zy-vm-crd
+spec:
+  description: k8s create
+  vmConfig:
+    hypervisor: kvm
+    vcpuCount: 2
+    vmemSizeGB: 4
+    rootDisk:
+      image: CentOS-7.6.1810-20190430.qcow2
+      sizeGB: 40
+    dataDisks:
+      - sizeGB: 20
+  projectConfig:
+    project: lizexi
+    projectDomain: Default

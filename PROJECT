@@ -1,0 +1,13 @@
+domain: yunion.io
+repo: onecloud-service-operator
+resources:
+- group: onecloud
+  kind: VirtualMachine
+  version: v1
+- group: onecloud
+  kind: AnsiblePlaybookTemplate
+  version: v1
+- group: onecloud
+  kind: AnsiblePlaybook
+  version: v1
+version: "2"

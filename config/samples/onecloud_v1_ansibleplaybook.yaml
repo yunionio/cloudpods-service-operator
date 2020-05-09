@@ -1,0 +1,11 @@
+apiVersion: onecloud.yunion.io/v1
+kind: AnsiblePlaybook
+metadata:
+  name: jenkins-vm
+spec:
+  playbookTemplateRef:
+    name: jenkins
+  inventory:
+    - virtualMachine:
+        name: zy-vm-crd
+  maxRetryTimes: 2

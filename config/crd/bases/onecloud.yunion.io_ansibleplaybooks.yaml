@@ -1,0 +1,175 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.5
+  creationTimestamp: null
+  name: ansibleplaybooks.onecloud.yunion.io
+spec:
+  group: onecloud.yunion.io
+  names:
+    kind: AnsiblePlaybook
+    listKind: AnsiblePlaybookList
+    plural: ansibleplaybooks
+    singular: ansibleplaybook
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: AnsiblePlaybook is the Schema for the ansibleplaybooks API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: AnsiblePlaybookSpec defines the desired state of AnsiblePlaybook
+          properties:
+            dependentPlaybook:
+              description: DependentPlaybook describe the dependent playbooks after
+                which itself can run.
+              items:
+                description: LocalObjectReference contains enough information to let
+                  you locate the referenced object inside the same namespace.
+                properties:
+                  name:
+                    type: string
+                type: object
+              type: array
+            inventory:
+              description: VirtualMachines specifies the inventory of ansible playbook.
+              items:
+                properties:
+                  vars:
+                    additionalProperties:
+                      type: string
+                    description: Vars describes the unique values ​​of the VirtualMachine
+                      corresponding to the variables in the AnsiblePlaybookTemplate.
+                    type: object
+                  virtualMachine:
+                    properties:
+                      apiVersion:
+                        type: string
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      resourceVersion:
+                        type: string
+                      uid:
+                        description: UID is a type that holds unique ID values, including
+                          UUIDs.  Because we don't ONLY use UUIDs, this is an alias
+                          to string.  Being a type captures intent and helps make
+                          sure that UIDs and names do not get conflated.
+                        type: string
+                    type: object
+                required:
+                - virtualMachine
+                type: object
+              type: array
+            maxRetryTimes:
+              format: int32
+              type: integer
+            playbookTemplate:
+              description: PlaybookTemplate describe the ansible playbook
+              properties:
+                files:
+                  description: Files describe the associated file tree and file content
+                    which should be in json format.
+                  type: string
+                playbook:
+                  description: Playbook describe the main content of absible playbook
+                    which should be in yaml format.
+                  type: string
+                requirements:
+                  description: Requirements describe the source of roles dependent
+                    on Playbook
+                  type: string
+                vars:
+                  description: Vars describe the vars to apply this ansible playbook.
+                  items:
+                    properties:
+                      default:
+                        description: Default describe the default value of this variable.
+                          If it is empty, Required should be true.
+                        type: string
+                      name:
+                        type: string
+                      required:
+                        description: Required indicates whether this variable is required.
+                        type: boolean
+                    required:
+                    - name
+                    type: object
+                  type: array
+              required:
+              - playbook
+              type: object
+            playbookTemplateRef:
+              description: PlaybookTemplateRef specifies the AnsiblePlaybookTemplate.
+              properties:
+                name:
+                  type: string
+              type: object
+            vars:
+              additionalProperties:
+                type: string
+              description: Vars describe the public value about Vars in AnsiblePlaybookTemplate.
+              type: object
+          required:
+          - inventory
+          type: object
+        status:
+          description: AnsiblePlaybookStatus defines the observed state of AnsiblePlaybook
+          properties:
+            externalInfo:
+              properties:
+                action:
+                  description: Action indicate the latest action for external vm.
+                  type: string
+                id:
+                  type: string
+                output:
+                  type: string
+                status:
+                  type: string
+              type: object
+            phase:
+              description: 'Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+            reason:
+              description: A human readable message indicating details about why vm
+                is in this phase.
+              type: string
+            tryTimes:
+              format: int32
+              type: integer
+          required:
+          - tryTimes
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

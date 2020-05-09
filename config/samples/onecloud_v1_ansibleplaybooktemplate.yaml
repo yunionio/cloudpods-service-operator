@@ -1,0 +1,23 @@
+apiVersion: onecloud.yunion.io/v1
+kind: AnsiblePlaybookTemplate
+metadata:
+  name: jenkins
+spec:
+  playbook: |
+    - hosts: all
+      become: true
+
+      roles:
+        - role: geerlingguy.java
+        - role: ansible-role-jenkins
+  requirements: |
+    - src: geerlingguy.java
+    - src: https://github.com/rainzm/ansible-role-jenkins
+  vars:
+    - name: jenkins_hostname
+      required: true
+      default: VirtualMachine.IP
+    - name: jenkins_admin_username
+      default: admin
+    - name: jenkins_admin_password
+      default: admin

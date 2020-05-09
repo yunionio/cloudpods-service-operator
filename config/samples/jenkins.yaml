@@ -1,0 +1,105 @@
+---
+
+apiVersion: onecloud.yunion.io/v1
+kind: VirtualMachine
+metadata:
+  name: jenkins-master
+spec:
+  description: k8s create
+  vmConfig:
+    hypervisor: kvm
+    vcpuCount: 2
+    vmemSizeGB: 4
+    rootDisk:
+      image: CentOS-7.6.1810-20190430.qcow2
+      sizeGB: 40
+    dataDisks:
+      - sizeGB: 20
+  projectConfig:
+    project: lizexi
+    projectDomain: Default
+
+---
+
+apiVersion: onecloud.yunion.io/v1
+kind: VirtualMachine
+metadata:
+  name: jenkins-slave1
+spec:
+  description: k8s create
+  vmConfig:
+    hypervisor: kvm
+    vcpuCount: 1
+    vmemSizeGB: 2
+    rootDisk:
+      image: CentOS-7.6.1810-20190430.qcow2
+      sizeGB: 30
+  projectConfig:
+    project: lizexi
+    projectDomain: Default
+
+---
+ 
+apiVersion: onecloud.yunion.io/v1
+kind: VirtualMachine
+metadata:
+  name: jenkins-slave2
+spec:
+  description: k8s create
+  vmConfig:
+    hypervisor: kvm
+    vcpuCount: 1
+    vmemSizeGB: 2
+    rootDisk:
+      image: CentOS-7.6.1810-20190430.qcow2
+      sizeGB: 30
+  projectConfig:
+    project: lizexi
+    projectDomain: Default
+
+---
+
+apiVersion: onecloud.yunion.io/v1
+kind: AnsiblePlaybookTemplate
+metadata:
+  name: jenkins-master-tem
+spec:
+  playbook: |
+    - hosts: all
+      become: true
+
+      vars:
+        jenkins_plugins:
+          - swarm
+        jenkins_version: "2.204"
+
+      roles:
+        - role: geerlingguy.java
+        - role: geerlingguy.jenkins
+  requirements: |
+    - src: geerlingguy.java
+    - src: geerlingguy.jenkins
+  vars:
+    - name: jenkins_hostname
+      required: true
+      default: localhost
+    - name: jenkins_http_port
+      default: 8080
+    - name: jenkins_admin_username
+      default: admin
+    - name: jenkins_admin_password
+      default: admin
+
+---
+
+apiVersion: onecloud.yunion.io/v1
+kind: AnsiblePlaybook
+metadata:
+  name: jenkins-master-vm
+spec:
+  playbookTemplateRef:
+    name: jenkins-master-tem
+  inventory:
+    - virtualMachine:
+        name: jenkins-master
+  maxRetryTimes: 2

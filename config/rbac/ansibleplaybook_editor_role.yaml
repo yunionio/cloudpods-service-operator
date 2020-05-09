@@ -1,0 +1,24 @@
+# permissions for end users to edit ansibleplaybooks.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ansibleplaybook-editor-role
+rules:
+- apiGroups:
+  - onecloud.yunion.io
+  resources:
+  - ansibleplaybooks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - onecloud.yunion.io
+  resources:
+  - ansibleplaybooks/status
+  verbs:
+  - get
