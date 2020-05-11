@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -172,7 +174,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			}
 			// build vars
 			noVars := make([]string, 0)
-			vars := make(map[string]string, len(host.Vars))
+			vars := make(map[string]interface{}, len(host.Vars))
 			for _, temVar := range playbookTemplate.Spec.Vars {
 				if value, ok := host.Vars[temVar.Name]; ok {
 					v, err := value.Value(ctx)
@@ -184,13 +186,13 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 						)
 						return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 					}
-					if len(v) == 0 {
+					if v == nil {
 						// need to wait
 						return r.markWaiting(ctx, log, &ansiblePlaybook,
 							fmt.Sprintf("wait for var '%s'", temVar.Name),
 						)
 					}
-					vars[temVar.Name] = v
+					vars[temVar.Name] = intOrString2interface(v)
 					continue
 				}
 				if _, ok := ansiblePlaybook.Spec.Vars[temVar.Name]; ok {
@@ -201,8 +203,8 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 					noVars = append(noVars, temVar.Name)
 					continue
 				}
-				if len(temVar.Default) > 0 {
-					vars[temVar.Name] = temVar.Default
+				if temVar.Default != nil {
+					vars[temVar.Name] = intOrString2interface(temVar.Default)
 					continue
 				}
 			}
@@ -221,7 +223,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		}
 
 		// build common vars
-		commonVars := make(map[string]string, len(ansiblePlaybook.Spec.Vars))
+		commonVars := make(map[string]interface{}, len(ansiblePlaybook.Spec.Vars))
 		for varName, sv := range ansiblePlaybook.Spec.Vars {
 			vv, err := sv.Value(ctx)
 			if err != nil {
@@ -232,12 +234,13 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 				)
 				return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 			}
-			if len(vv) == 0 {
+			if vv == nil {
 				// need to wait
 				return r.markWaiting(ctx, log, &ansiblePlaybook,
 					fmt.Sprintf("wait for var '%s'", varName),
 				)
 			}
+			commonVars[varName] = intOrString2interface(vv)
 		}
 
 		// all other resources ready, create ansible playbook
@@ -273,6 +276,18 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	return ctrl.Result{}, nil
 }
 
+func intOrString2interface(is *intstr.IntOrString) interface{} {
+	switch is.Type {
+	case intstr.Int:
+		return is.IntVal
+	case intstr.String:
+		return is.StrVal
+	default:
+		// not arrive
+		return is
+	}
+}
+
 func (r *AnsiblePlaybookReconciler) Delete(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (ctrl.Result, error) {
 	apStatus, err := provider.Provider.APGetStatus(ctx, ap)
 	if err != nil {
@@ -284,7 +299,7 @@ func (r *AnsiblePlaybookReconciler) Delete(ctx context.Context, ap *onecloudv1.A
 	}
 	// Pending
 	if ap.Status.Phase == onecloudv1.ResourcePending {
-		return ctrl.Result{Requeue: true, RequeueAfter: 20 * time.Second}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
 	}
 
 	// Unkown
@@ -299,7 +314,7 @@ func (r *AnsiblePlaybookReconciler) Delete(ctx context.Context, ap *onecloudv1.A
 }
 
 func (r *AnsiblePlaybookReconciler) apCreate(ctx context.Context, ap *onecloudv1.AnsiblePlaybook,
-	hosts []provider.AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate, commonVars map[string]string) error {
+	hosts []provider.AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate, commonVars map[string]interface{}) error {
 	// check if recreate items has reached the max limit
 	maxRetryTimes := r.maxRetryTimes(ap)
 	if ap.Status.TryTimes > maxRetryTimes {
@@ -330,8 +345,8 @@ func (r *AnsiblePlaybookReconciler) apDelete(ctx context.Context, ap *onecloudv1
 }
 
 func (r *AnsiblePlaybookReconciler) maxRetryTimes(ap *onecloudv1.AnsiblePlaybook) int32 {
-	if ap.Spec.MaxRetryTime == nil {
-		return 5
+	if ap.Spec.MaxRetryTime == nil || *ap.Spec.MaxRetryTime <= 0 {
+		return math.MaxInt32
 	}
 	return *ap.Spec.MaxRetryTime
 }

@@ -276,5 +276,5 @@ func (r SRequest) params(dict *jsonutils.JSONDict) *jsonutils.JSONDict {
 
 type AnsiblePlaybookHost struct {
 	VM   *onecloudv1.VirtualMachine
-	Vars map[string]string
+	Vars map[string]interface{}
 }

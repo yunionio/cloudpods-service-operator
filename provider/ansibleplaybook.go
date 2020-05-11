@@ -38,7 +38,7 @@ func init() {
 
 func (oc OnecloudProvider) APCreate(ctx context.Context, ap *onecloudv1.AnsiblePlaybook,
 	hosts []AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate,
-	commonVars map[string]string) (onecloudv1.ExternalInfoBase,
+	commonVars map[string]interface{}) (onecloudv1.ExternalInfoBase,
 	error) {
 	// build inventory
 	params := jsonutils.NewDict()

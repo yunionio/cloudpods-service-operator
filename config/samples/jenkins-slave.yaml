@@ -1,0 +1,26 @@
+apiVersion: onecloud.yunion.io/v1
+kind: AnsiblePlaybook
+metadata:
+  name: jenkins-slave-vm
+spec:
+  playbookTemplateRef:
+    name: jenkins-slave-tem
+  inventory:
+    - virtualMachine:
+        name: jenkins-slave1
+      vars:
+        jenkins_slave_name:
+          direct: slave1
+    - virtualMachine:
+        name: jenkins-slave2
+      vars:
+        jenkins_slave_name:
+          direct: slave2
+  vars:
+    jenkins_master_hostname:
+      indirect:
+        kind: VirtualMachine
+        namespace: onecloud
+        name: jenkins-master
+        fieldPath: Status.ExternalInfo.Ips[0]
+  maxRetryTimes: 2

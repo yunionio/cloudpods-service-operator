@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type StringValue struct {
@@ -46,4 +48,43 @@ func (sv *StringValue) Value(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("Type of ObjectFieldReference' Value in not 'string' but '%s'", ts)
 	}
 	return s, nil
+}
+
+type IntOrStringValue struct {
+	// +optional
+	Direct *intstr.IntOrString `json:"direct,omitempty"`
+	// +optional
+	Indirect *ObjectFieldReference `json:"indirect,omitempty"`
+}
+
+func (isv *IntOrStringValue) Value(ctx context.Context) (*intstr.IntOrString, error) {
+	if isv.Direct != nil {
+		ret := *isv.Direct
+		return &ret, nil
+	}
+	in, err := isv.Indirect.Value(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if in == nil {
+		return nil, err
+	}
+
+	switch v := in.(type) {
+	case string:
+		ret := intstr.FromString(v)
+		return &ret, nil
+	case int:
+		ret := intstr.FromInt(v)
+		return &ret, nil
+	case int32:
+		ret := intstr.FromInt(int(v))
+		return &ret, nil
+	case int64:
+		ret := intstr.FromInt(int(v))
+		return &ret, nil
+	default:
+		ts := reflect.TypeOf(in).String()
+		return nil, fmt.Errorf("Type of ObjectFieldReference' Value in not 'string' but '%s'", ts)
+	}
 }

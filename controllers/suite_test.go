@@ -88,3 +88,11 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
+
+func TestHello(t *testing.T) {
+	if 0.1+0.2 == 0.3 {
+		t.Logf("true")
+	} else {
+		t.Logf("false")
+	}
+}

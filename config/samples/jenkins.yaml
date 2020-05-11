@@ -81,7 +81,6 @@ spec:
     - src: geerlingguy.jenkins
   vars:
     - name: jenkins_hostname
-      required: true
       default: localhost
     - name: jenkins_http_port
       default: 8080
@@ -103,3 +102,32 @@ spec:
     - virtualMachine:
         name: jenkins-master
   maxRetryTimes: 2
+
+---
+
+apiVersion: onecloud.yunion.io/v1
+kind: AnsiblePlaybookTemplate
+metadata:
+  name: jenkins-slave-tem
+spec:
+  playbook: |
+    - hosts: all
+      become: true
+
+      roles:
+        - role: geerlingguy.java
+        - role: ansible-role-slave
+  requirements: |
+    - src: geerlingguy.java
+    - src: https://github.com/yunionio/ansible-role-jenkins-slave
+  vars:
+    - name: jenkins_slave_name
+      required: true
+    - name: jenkins_master_hostname
+      required: true
+    - name: jenkins_master_port
+      default: 8080
+    - name: jenkins_master_username
+      default: admin
+    - name: jenkins_master_password
+      default: admin

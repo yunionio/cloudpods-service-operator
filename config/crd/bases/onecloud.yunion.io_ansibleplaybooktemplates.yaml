@@ -52,9 +52,12 @@ spec:
               items:
                 properties:
                   default:
+                    anyOf:
+                    - type: integer
+                    - type: string
                     description: Default describe the default value of this variable.
                       If it is empty, Required should be true.
-                    type: string
+                    x-kubernetes-int-or-string: true
                   name:
                     type: string
                   required:

@@ -58,7 +58,7 @@ func (oc OnecloudProvider) VMDelete(ctx context.Context, vm *onecloudv1.VirtualM
 }
 
 func (oc OnecloudProvider) VMGetStatus(ctx context.Context, vm *onecloudv1.VirtualMachine) (vmStatus *onecloudv1.
-VirtualMachineStatus, err error) {
+	VirtualMachineStatus, err error) {
 	lastInfo := vm.Status.ExternalInfo.ExternalInfoBase
 	_, extInfo, err := RequestVM.Operation(OperGetStatus).Apply(ctx, vm.Status.ExternalInfo.Id, nil)
 	if err != nil {
