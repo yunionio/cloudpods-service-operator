@@ -42,7 +42,7 @@ func dealErr(ctx context.Context, logger logr.Logger, sclient client.StatusClien
 	if reErr.IsClientErr() {
 		re.SetResourcePhase(onecloudv1.ResourcePending, reErr.Error())
 	}
-	if reErr.IsClientErr() {
+	if reErr.IsServerErr() {
 		re.SetResourcePhase(onecloudv1.ResourceUnkown, reErr.Error())
 	}
 	return ctrl.Result{}, sclient.Status().Update(ctx, re)

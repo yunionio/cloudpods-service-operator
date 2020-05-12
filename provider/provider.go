@@ -155,7 +155,7 @@ func (re SRequestErr) IsNotFound(resource Resource) bool {
 }
 
 func (re SRequestErr) IsClientErr() bool {
-	return re.Code >= 400 && re.Code < 500
+	return re.Code >= 400 && re.Code != 404 && re.Code < 500
 }
 
 func (re SRequestErr) IsServerErr() bool {

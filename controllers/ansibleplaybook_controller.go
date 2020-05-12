@@ -119,7 +119,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		if err := r.apClear(ctx, &ansiblePlaybook); err != nil {
 			return dealErr(err)
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: time.Second, Requeue: true}, nil
 	}
 
 	var playbookTemplate onecloudv1.AnsiblePlaybookTemplate
