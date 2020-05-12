@@ -1,4 +1,4 @@
-module onecloud-service-operator
+module yunion.io/x/onecloud-service-operator
 
 go 1.13
 

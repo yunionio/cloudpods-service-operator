@@ -21,7 +21,7 @@ import (
 	"os"
 	"time"
 
-	"onecloud-service-operator/provider"
+	"yunion.io/x/onecloud-service-operator/provider"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -29,8 +29,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	onecloudv1 "onecloud-service-operator/api/v1"
-	"onecloud-service-operator/controllers"
+	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

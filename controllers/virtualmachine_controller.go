@@ -28,9 +28,9 @@ import (
 
 	"yunion.io/x/pkg/utils"
 
-	onecloudv1 "onecloud-service-operator/api/v1"
-	"onecloud-service-operator/provider"
-	"onecloud-service-operator/util"
+	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/provider"
+	"yunion.io/x/onecloud-service-operator/util"
 )
 
 // VirtualMachineReconciler reconciles a VirtualMachine object

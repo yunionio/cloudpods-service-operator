@@ -28,8 +28,8 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 	onecloudutils "yunion.io/x/pkg/utils"
 
-	onecloudv1 "onecloud-service-operator/api/v1"
-	"onecloud-service-operator/util"
+	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/util"
 )
 
 func (oc OnecloudProvider) VMCreate(ctx context.Context, vm *onecloudv1.VirtualMachine) (onecloudv1.ExternalInfoBase, error) {

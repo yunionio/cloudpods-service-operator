@@ -28,7 +28,7 @@ import (
 	"yunion.io/x/onecloud/pkg/util/httputils"
 	"yunion.io/x/pkg/utils"
 
-	onecloudv1 "onecloud-service-operator/api/v1"
+	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 )
 
 type IProvider interface {
