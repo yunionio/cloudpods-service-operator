@@ -146,7 +146,8 @@ type VirtualMachineConfig struct {
 
 type VMProjectSpec struct {
 	Project       string `json:"project"`
-	PoejectDomain string `json:"projectDomain"`
+	// +optional
+	PoejectDomain string `json:"projectDomain,omitempty"`
 }
 
 type VMDiskSpec struct {

@@ -39,6 +39,11 @@ import (
 	"yunion.io/x/onecloud-service-operator/provider"
 )
 
+const (
+	PendingAfter = 15 * time.Second
+	WaitingAfter = 15 * time.Second
+)
+
 // AnsiblePlaybookReconciler reconciles a AnsiblePlaybook object
 type AnsiblePlaybookReconciler struct {
 	client.Client
@@ -57,7 +62,6 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 
 	var ansiblePlaybook onecloudv1.AnsiblePlaybook
 	if err := r.Get(ctx, req.NamespacedName, &ansiblePlaybook); err != nil {
-		log.Error(err, "unable to fetch AnsiblePlaybook")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -265,7 +269,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 
 	// Pending
 	if ansiblePlaybook.Status.Phase == onecloudv1.ResourcePending {
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: PendingAfter}, nil
 	}
 
 	// Unkown
@@ -334,7 +338,7 @@ func (r *AnsiblePlaybookReconciler) apCreate(ctx context.Context, ap *onecloudv1
 
 func (r *AnsiblePlaybookReconciler) apDelete(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) error {
 	isDelete, extInfo, err := provider.Provider.APDelete(ctx, ap)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	if isDelete {
@@ -369,7 +373,7 @@ func (r *AnsiblePlaybookReconciler) markWaiting(ctx context.Context, log logr.Lo
 	newStatus.Phase = onecloudv1.ResourceWaiting
 	newStatus.Reason = msg
 	if !r.requireUpdate(ap, newStatus) {
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: WaitingAfter}, nil
 	}
 	ap.Status = *newStatus
 	if err := r.Status().Update(ctx, ap); err != nil {

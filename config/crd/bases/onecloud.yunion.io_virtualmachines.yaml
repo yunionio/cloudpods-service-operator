@@ -81,7 +81,6 @@ spec:
                   type: string
               required:
               - project
-              - projectDomain
               type: object
             recreatePolicy:
               description: RecreatePolicy describe that when the virtual machine is
