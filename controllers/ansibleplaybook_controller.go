@@ -115,8 +115,8 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			ansiblePlaybook.Status = *apStatus
 			return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 		}
-		// delete this
-		if err := r.apDelete(ctx, &ansiblePlaybook); err != nil {
+		// clear this
+		if err := r.apClear(ctx, &ansiblePlaybook); err != nil {
 			return dealErr(err)
 		}
 		return ctrl.Result{}, nil
@@ -346,6 +346,11 @@ func (r *AnsiblePlaybookReconciler) apDelete(ctx context.Context, ap *onecloudv1
 	}
 	ap.Status.ExternalInfo.ExternalInfoBase = extInfo
 	return r.Status().Update(ctx, ap)
+}
+
+func (r *AnsiblePlaybookReconciler) apClear(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) error {
+	_, _, err := provider.Provider.APDelete(ctx, ap)
+	return err
 }
 
 func (r *AnsiblePlaybookReconciler) maxRetryTimes(ap *onecloudv1.AnsiblePlaybook) int32 {
