@@ -22,10 +22,10 @@ import (
 )
 
 type DisplayIdenSpec struct {
-	// Name of virtual machine
+	// Name
 	// +optional
 	Name string `json:"name,omitempty"`
-	// Don't check name if IgnoreName is set true
+	// NameCheck indicates whether to strictly check Name
 	// +optional
 	NameCheck *bool `json:"nameCheck,omitempty"`
 	// +optional
