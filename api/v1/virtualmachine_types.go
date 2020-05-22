@@ -74,7 +74,7 @@ type RecreatePolicy struct {
 type VMNewEipSpec struct {
 	// Bw indicates the bandwidth of the Elastic Public IP.
 	// +kubebuilder:validation:Minimum=1
-	Bw *int64 `json:"Bw,omitempty"`
+	Bw *int64 `json:"bw,omitempty"`
 	// The charge type of Elastic Public IP
 	// +optional
 	ChargeType string `json:"chargeType,omitempty"`

@@ -53,16 +53,16 @@ spec:
             keyPairId:
               type: string
             name:
-              description: Name of virtual machine
+              description: Name
               type: string
             nameCheck:
-              description: Don't check name if IgnoreName is set true
+              description: NameCheck indicates whether to strictly check Name
               type: boolean
             newEip:
               description: NewEip indicates that create a new EIP and bind it with
                 VM. It conflicts with Eip.
               properties:
-                Bw:
+                bw:
                   description: Bw indicates the bandwidth of the Elastic Public IP.
                   format: int64
                   minimum: 1
