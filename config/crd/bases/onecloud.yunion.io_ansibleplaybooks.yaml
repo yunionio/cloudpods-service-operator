@@ -47,6 +47,7 @@ spec:
                           anyOf:
                           - type: integer
                           - type: string
+                          type: object
                           x-kubernetes-int-or-string: true
                         indirect:
                           properties:
@@ -124,6 +125,7 @@ spec:
                         - type: string
                         description: Default describe the default value of this variable.
                           If it is empty, Required should be true.
+                        type: object
                         x-kubernetes-int-or-string: true
                       name:
                         type: string
@@ -150,6 +152,7 @@ spec:
                     anyOf:
                     - type: integer
                     - type: string
+                    type: object
                     x-kubernetes-int-or-string: true
                   indirect:
                     properties:

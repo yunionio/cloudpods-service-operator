@@ -18,7 +18,6 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -50,7 +49,7 @@ type AnsiblePlaybookTemplateVar struct {
 	// Default describe the default value of this variable.
 	// If it is empty, Required should be true.
 	// +optional
-	Default *intstr.IntOrString `json:"default,omitempty"`
+	Default *IntOrString `json:"default,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -27,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -184,19 +183,19 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 					v, err := value.Value(ctx)
 					if err != nil {
 						// invalid
-						log.Error(err, "StringValue.Value")
+						log.Error(err, "StringStore.Value")
 						ansiblePlaybook.SetResourcePhase(onecloudv1.ResourceInvalid,
 							fmt.Sprintf("The value of var '%s' is valid: %s", temVar.Name, err.Error()),
 						)
 						return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 					}
-					if v == nil {
+					if v == nil || v.IsZero() {
 						// need to wait
 						return r.markWaiting(ctx, log, &ansiblePlaybook,
 							fmt.Sprintf("wait for var '%s'", temVar.Name),
 						)
 					}
-					vars[temVar.Name] = intOrString2interface(v)
+					vars[temVar.Name] = v.Interface()
 					continue
 				}
 				if _, ok := ansiblePlaybook.Spec.Vars[temVar.Name]; ok {
@@ -208,7 +207,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 					continue
 				}
 				if temVar.Default != nil {
-					vars[temVar.Name] = intOrString2interface(temVar.Default)
+					vars[temVar.Name] = temVar.Default.Interface()
 					continue
 				}
 			}
@@ -232,26 +231,29 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			vv, err := sv.Value(ctx)
 			if err != nil {
 				// invalid
-				log.Error(err, "StringValue.Value")
+				log.Error(err, "StringStore.Value")
 				ansiblePlaybook.SetResourcePhase(onecloudv1.ResourceInvalid,
 					fmt.Sprintf("The value of var '%s' is valid: %s", varName, err.Error()),
 				)
 				return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 			}
-			if vv == nil {
+			if vv == nil || vv.IsZero() {
 				// need to wait
 				return r.markWaiting(ctx, log, &ansiblePlaybook,
 					fmt.Sprintf("wait for var '%s'", varName),
 				)
 			}
-			commonVars[varName] = intOrString2interface(vv)
+			commonVars[varName] = vv.Interface()
 		}
 
 		// all other resources ready, create ansible playbook
 		return ctrl.Result{}, r.apCreate(ctx, &ansiblePlaybook, hosts, &playbookTemplate, commonVars)
 	}
 
-	apStatus, err := provider.Provider.APGetStatus(ctx, &ansiblePlaybook)
+	var recon func(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (*onecloudv1.AnsiblePlaybookStatus, error)
+
+	recon = provider.Provider.APGetStatus
+	apStatus, err := recon(ctx, &ansiblePlaybook)
 	if err != nil {
 		return dealErr(err)
 	}
@@ -278,18 +280,6 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func intOrString2interface(is *intstr.IntOrString) interface{} {
-	switch is.Type {
-	case intstr.Int:
-		return is.IntVal
-	case intstr.String:
-		return is.StrVal
-	default:
-		// not arrive
-		return is
-	}
 }
 
 func (r *AnsiblePlaybookReconciler) Delete(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (ctrl.Result, error) {
@@ -374,10 +364,12 @@ func (r *AnsiblePlaybookReconciler) requireUpdate(ap *onecloudv1.AnsiblePlaybook
 }
 
 func (r *AnsiblePlaybookReconciler) markWaiting(ctx context.Context, log logr.Logger, ap *onecloudv1.AnsiblePlaybook, msg string) (ctrl.Result, error) {
+	log.Info("markWaiting")
 	newStatus := ap.Status.DeepCopy()
 	newStatus.Phase = onecloudv1.ResourceWaiting
 	newStatus.Reason = msg
 	if !r.requireUpdate(ap, newStatus) {
+		log.Info(fmt.Sprintf("no need to update, requeue after %d s", 15))
 		return ctrl.Result{Requeue: true, RequeueAfter: WaitingAfter}, nil
 	}
 	ap.Status = *newStatus
@@ -385,6 +377,7 @@ func (r *AnsiblePlaybookReconciler) markWaiting(ctx context.Context, log logr.Lo
 		log.Error(err, "unablt to update ansibleplaybook")
 		return ctrl.Result{}, err
 	}
+	log.Info(fmt.Sprintf("update successfully in markwaiting"))
 	return ctrl.Result{}, nil
 }
 
