@@ -128,8 +128,12 @@ func (oc OnecloudProvider) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
 	default:
 		// noway
 	}
+	user := "root"
+	if host.VM.Spec.VmConfig.Hypervisor != "kvm" {
+		user = "cloudroot"
+	}
 	vars := map[string]interface{}{
-		"ansible_user": "root",
+		"ansible_user": user,
 		"ansible_host": ip,
 	}
 	for k, v := range host.Vars {
