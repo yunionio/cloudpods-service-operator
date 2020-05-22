@@ -159,7 +159,7 @@ func (re SRequestErr) IsClientErr() bool {
 }
 
 func (re SRequestErr) IsServerErr() bool {
-	return re.Code > 500
+	return re.Code >= 500
 }
 
 func (re SRequestErr) Error() string {
