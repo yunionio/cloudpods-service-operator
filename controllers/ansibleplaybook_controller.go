@@ -35,7 +35,7 @@ import (
 	"yunion.io/x/pkg/utils"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
-	"yunion.io/x/onecloud-service-operator/provider"
+	"yunion.io/x/onecloud-service-operator/pkg/provider"
 )
 
 const (
@@ -48,6 +48,8 @@ type AnsiblePlaybookReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	// Enable intensive information collection during the reconcile process
+	Dense bool
 }
 
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=ansibleplaybooks,verbs=get;list;watch;create;update;patch;delete
