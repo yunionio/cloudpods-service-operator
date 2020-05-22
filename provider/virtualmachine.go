@@ -38,7 +38,6 @@ func (oc OnecloudProvider) VMCreate(ctx context.Context, vm *onecloudv1.VirtualM
 		serverCreateInput.GenerateName = vm.ObjectMeta.Name
 	}
 	params := serverCreateInput.JSON(serverCreateInput)
-	fmt.Print(params.String())
 	_, s, e := RequestVM.Operation(OperCreate).Apply(ctx, "", params)
 	return s, e
 }
@@ -168,10 +167,10 @@ func (oc OnecloudProvider) VMReconcile(ctx context.Context, logger logr.Logger,
 		return
 	}
 	// changebw
-	oper, err = oc.eipChangeBw(ctx, logger, &serverDetail, &vm.Spec)
-	if err != nil || oper != nil {
-		return
-	}
+	//oper, err = oc.eipChangeBw(ctx, logger, &serverDetail, &vm.Spec)
+	//if err != nil || oper != nil {
+	//	return
+	//}
 	// set secgroups
 	oper = oc.setSecGroups(&serverDetail, &vm.Spec)
 	return
@@ -441,9 +440,9 @@ var (
 var (
 	True                  = true
 	recreatePolicyDefault = &onecloudv1.RecreatePolicy{
-		Never:       nil,
+		Never:       &True,
 		MatchStatus: []string{},
-		Allways:     &True,
+		Allways:     nil,
 		MaxTimes:    5,
 	}
 	vmCreatingStatus = append(comapi.VM_CREATING_STATUS, comapi.VM_INIT, comapi.VM_SCHEDULE)
@@ -467,6 +466,9 @@ func (oc OnecloudProvider) isPendingWithoutFailed(info onecloudv1.ExternalInfoBa
 	if onecloudutils.IsInStringArray(info.Status, vmCreatingStatus) {
 		return true
 	}
+	if onecloudutils.IsInStringArray(info.Status, []string{comapi.VM_ASSOCIATE_EIP}) {
+		return true
+	}
 	if info.Status == comapi.VM_DELETING || strings.Contains(info.Status, "delete") {
 		return true
 	}
@@ -474,6 +476,9 @@ func (oc OnecloudProvider) isPendingWithoutFailed(info onecloudv1.ExternalInfoBa
 		return true
 	}
 	if strings.Contains(info.Status, "change") {
+		return true
+	}
+	if strings.Contains(info.Status, "sync") {
 		return true
 	}
 	return false
