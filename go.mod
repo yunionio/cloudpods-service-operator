@@ -16,9 +16,12 @@ require (
 	yunion.io/x/log v0.0.0-20200313080802-57a4ce5966b3
 	yunion.io/x/onecloud v0.0.0-20200427025506-7f96ad48447f
 	yunion.io/x/pkg v0.0.0-20200416145704-22c189971435
+	yunion.io/x/structarg v0.0.0-20200423163001-168d0687be7e
 )
 
 replace (
+
+	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85 => github.com/rainzm/go-lookup v0.0.0-20200508134129-95189dd17b94
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
@@ -43,6 +46,4 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918161442-d4c9c65c82af
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.0.0-20190918162410-e45c26d066f2
 	k8s.io/sample-controller => k8s.io/sample-controller v0.0.0-20190918161628-92eb3cb7496c
-
-	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85 => github.com/rainzm/go-lookup v0.0.0-20200508134129-95189dd17b94
 )

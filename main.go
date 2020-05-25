@@ -17,11 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"os"
 	"time"
-
-	"yunion.io/x/onecloud-service-operator/provider"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -31,6 +28,8 @@ import (
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud-service-operator/controllers"
+	"yunion.io/x/onecloud-service-operator/pkg/options"
+	"yunion.io/x/onecloud-service-operator/pkg/provider"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -47,26 +46,18 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	provider.Provider.InitConfig()
-	flag.Parse()
-
+	options.ParseOptions()
 	provider.Provider.Init()
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
-	syncPeriod := 10 * time.Minute
+	sp := time.Duration(options.Options.SyncPeriod) * time.Minute
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
+		MetricsBindAddress: options.Options.MetricsAddr,
 		Port:               9443,
-		LeaderElection:     enableLeaderElection,
+		LeaderElection:     options.Options.EnableLeaderElection,
 		LeaderElectionID:   "7ddf82e9.yunion.io",
-		SyncPeriod:         &syncPeriod,
+		SyncPeriod:         &sp,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -81,7 +72,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualMachine")
 		os.Exit(1)
 	}
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	if options.Options.EnableWebhooks {
 		if err = (&onecloudv1.VirtualMachine{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "VirtualMachine")
 			os.Exit(1)

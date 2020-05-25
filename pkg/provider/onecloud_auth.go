@@ -18,11 +18,12 @@ package provider
 
 import (
 	"context"
-	"flag"
 	"log"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
+
+	"yunion.io/x/onecloud-service-operator/pkg/options"
 )
 
 var AuthConfig AdminAuthConfig
@@ -35,16 +36,6 @@ type AdminAuthConfig struct {
 	AdminDomain        string
 	AdminProject       string
 	AdminProjectDomain string
-}
-
-func (op OnecloudProvider) InitConfig() {
-	flag.StringVar(&AuthConfig.Region, "region", "", "Region name or ID")
-	flag.StringVar(&AuthConfig.AuthURL, "auth-url", "", "Keystone auth URL")
-	flag.StringVar(&AuthConfig.AdminUsername, "admin-username", "", "Admin username")
-	flag.StringVar(&AuthConfig.AdminPassword, "admin-password", "", "Admin password")
-	flag.StringVar(&AuthConfig.AdminDomain, "admin-domain", "", "Admin domain")
-	flag.StringVar(&AuthConfig.AdminProject, "admin-project", "", "Admin project")
-	flag.StringVar(&AuthConfig.AdminProjectDomain, "admin-project-domain", "", "Admin project domain")
 }
 
 func (config AdminAuthConfig) ToAuthInfo() *auth.AuthInfo {
@@ -75,6 +66,14 @@ func (config AdminAuthConfig) ToAuthInfo() *auth.AuthInfo {
 }
 
 func (op OnecloudProvider) Init() {
+	AuthConfig = AdminAuthConfig{
+		Region:        options.Options.Region,
+		AuthURL:       options.Options.AuthURL,
+		AdminUsername: options.Options.AdminUsername,
+		AdminPassword: options.Options.AdminPassword,
+		AdminDomain:   options.Options.AdminDomain,
+		AdminProject:  options.Options.AdminProject,
+	}
 	auth.Init(AuthConfig.ToAuthInfo(), false, true, "", "")
 }
 

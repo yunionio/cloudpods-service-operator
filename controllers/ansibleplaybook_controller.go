@@ -35,12 +35,14 @@ import (
 	"yunion.io/x/pkg/utils"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/pkg/options"
 	"yunion.io/x/onecloud-service-operator/pkg/provider"
 )
 
-const (
-	PendingAfter = 15 * time.Second
-	WaitingAfter = 15 * time.Second
+var (
+	apPendingAfter = time.Duration(options.Options.AnsiblePlaybookConfig.IntervalPending) * time.Second
+	apWaitingAfter = time.Duration(options.Options.AnsiblePlaybookConfig.IntervalWaiting) * time.Second
+	dense          = options.Options.AnsiblePlaybookConfig.Dense
 )
 
 // AnsiblePlaybookReconciler reconciles a AnsiblePlaybook object
@@ -255,6 +257,9 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	var recon func(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (*onecloudv1.AnsiblePlaybookStatus, error)
 
 	recon = provider.Provider.APGetStatus
+	if dense {
+		recon = provider.Provider.APReconcile
+	}
 	apStatus, err := recon(ctx, &ansiblePlaybook)
 	if err != nil {
 		return dealErr(err)
@@ -273,7 +278,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 
 	// Pending
 	if ansiblePlaybook.Status.Phase == onecloudv1.ResourcePending {
-		return ctrl.Result{Requeue: true, RequeueAfter: PendingAfter}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: apPendingAfter}, nil
 	}
 
 	// Unkown
@@ -372,7 +377,7 @@ func (r *AnsiblePlaybookReconciler) markWaiting(ctx context.Context, log logr.Lo
 	newStatus.Reason = msg
 	if !r.requireUpdate(ap, newStatus) {
 		log.Info(fmt.Sprintf("no need to update, requeue after %d s", 15))
-		return ctrl.Result{Requeue: true, RequeueAfter: WaitingAfter}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: apWaitingAfter}, nil
 	}
 	ap.Status = *newStatus
 	if err := r.Status().Update(ctx, ap); err != nil {

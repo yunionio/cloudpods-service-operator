@@ -29,8 +29,13 @@ import (
 	"yunion.io/x/pkg/utils"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/pkg/options"
 	"yunion.io/x/onecloud-service-operator/pkg/provider"
 	"yunion.io/x/onecloud-service-operator/pkg/util"
+)
+
+var (
+	vmPendingAfter = time.Duration(options.Options.VirtualMachineConfig.IntervalPending) * time.Minute
 )
 
 // VirtualMachineReconciler reconciles a VirtualMachine object
