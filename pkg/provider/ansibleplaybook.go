@@ -25,7 +25,7 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 	"yunion.io/x/onecloud/pkg/util/ansiblev2"
 
-	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	onecloudv1 "yunion.io/x/onecloud-resource-operator/api/v1"
 )
 
 var (

@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	onecloudv1 "yunion.io/x/onecloud-resource-operator/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

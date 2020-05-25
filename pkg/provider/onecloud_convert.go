@@ -19,7 +19,7 @@ package provider
 import (
 	comapi "yunion.io/x/onecloud/pkg/apis/compute"
 
-	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	onecloudv1 "yunion.io/x/onecloud-resource-operator/api/v1"
 )
 
 func (OnecloudProvider) convertInt64Ptr(n *int64) int {

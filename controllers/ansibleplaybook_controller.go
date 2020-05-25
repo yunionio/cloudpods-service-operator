@@ -34,9 +34,9 @@ import (
 
 	"yunion.io/x/pkg/utils"
 
-	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
-	"yunion.io/x/onecloud-service-operator/pkg/options"
-	"yunion.io/x/onecloud-service-operator/pkg/provider"
+	onecloudv1 "yunion.io/x/onecloud-resource-operator/api/v1"
+	"yunion.io/x/onecloud-resource-operator/pkg/options"
+	"yunion.io/x/onecloud-resource-operator/pkg/provider"
 )
 
 var (
