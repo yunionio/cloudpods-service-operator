@@ -1,4 +1,8 @@
 
+# Env init
+ROOT_DIR := $(CURDIR)
+BUILD_DIR := $(ROOT_DIR)/_output
+
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -54,8 +58,15 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+# kustomize crds
+generate-crd-yaml: output_dir
+	kustomize build config/crd > _output/crds.yaml
+
+output_dir:
+	@mkdir -p $(BUILD_DIR)
+
 # Build the docker image
-docker-build: test
+docker-build: test generate-crd-yaml
 	docker build . -t ${IMG}
 
 # Push the docker image

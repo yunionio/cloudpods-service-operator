@@ -13,17 +13,22 @@ RUN go mod download
 COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
-COPY provider/ provider/
-COPY util/ util/
+COPY pkg/ pkg/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM registry.cn-beijing.aliyuncs.com/yunionio/onecloud-base:latest
 WORKDIR /
 COPY --from=builder /workspace/manager .
-USER nonroot:nonroot
 
-ENTRYPOINT ["/manager"]
+# Install CRDs yaml
+COPY _output/crds.yaml /etc/yunion/crds.yaml
+
+# Install kubectl from Docker Hub.
+COPY --from=lachlanevenson/k8s-kubectl:v1.16.9 /usr/local/bin/kubectl /usr/local/bin/kubectl
+
+# USER nonroot:nonroot
+# ENTRYPOINT ["kubectl"]
