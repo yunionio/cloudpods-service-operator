@@ -23,7 +23,7 @@ test: generate fmt vet manifests
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager main.go
+	go build -mod vendor -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
@@ -67,11 +67,13 @@ output_dir:
 
 # Build the docker image
 docker-build: test generate-crd-yaml
-	docker build . -t ${IMG}
+	docker build . -t $(REGISTRY)/onecloud-resource-operator:$(VERSION)
 
 # Push the docker image
 docker-push:
-	docker push ${IMG}
+	docker push $(REGISTRY)/onecloud-resource-operator:$(VERSION)
+
+image: docker-build docker-push
 
 # find or download controller-gen
 # download controller-gen if necessary
