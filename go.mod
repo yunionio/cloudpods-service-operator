@@ -3,24 +3,23 @@ module yunion.io/x/onecloud-resource-operator
 go 1.13
 
 require (
-	github.com/coredns/coredns v1.3.0
+	github.com/coredns/coredns v1.3.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v9.0.0+incompatible
-	k8s.io/kubernetes v1.16.0
+	k8s.io/kubernetes v1.16.0 // indirect
 	sigs.k8s.io/controller-runtime v0.5.0
 	yunion.io/x/jsonutils v0.0.0-20200415132054-2bf8a5e94501
-	yunion.io/x/log v0.0.0-20200313080802-57a4ce5966b3
+	yunion.io/x/log v0.0.0-20200313080802-57a4ce5966b3 // indirect
 	yunion.io/x/onecloud v0.0.0-20200427025506-7f96ad48447f
 	yunion.io/x/pkg v0.0.0-20200416145704-22c189971435
 	yunion.io/x/structarg v0.0.0-20200423163001-168d0687be7e
 )
 
 replace (
-
 	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85 => github.com/rainzm/go-lookup v0.0.0-20200508134129-95189dd17b94
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
