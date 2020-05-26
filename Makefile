@@ -58,22 +58,18 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-# kustomize crds
-generate-crd-yaml: output_dir
-	kustomize build config/crd > _output/crds.yaml
-
-output_dir:
-	@mkdir -p $(BUILD_DIR)
-
 # Build the docker image
-docker-build: test generate-crd-yaml
+docker-build: test 
 	docker build . -t $(REGISTRY)/service-operator:$(VERSION)
 
 # Push the docker image
 docker-push:
 	docker push $(REGISTRY)/service-operator:$(VERSION)
 
-image: docker-build docker-push
+# Simple operator for build and push image in auto build env
+image: 
+	docker build . -t $(REGISTRY)/service-operator:$(VERSION)
+	docker push $(REGISTRY)/service-operator:$(VERSION)
 
 # find or download controller-gen
 # download controller-gen if necessary
