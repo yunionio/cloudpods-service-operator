@@ -11,10 +11,10 @@ import (
 type OperatroOptions struct {
 	structarg.BaseOptions
 
-	MetricsAddr          string `help:"The address the metric endpoint binds to." default:":8080"`
-	EnableLeaderElection bool   `help:"Enable leader election for controller manager. Enable intensive information collection during the reconcile process." default:"false"`
-	EnableWebhooks       bool   `help:"Enable webhooks for controller manager." default:"false"`
-	SyncPeriod           int    `help:"The interval between two adjacent local cache refreshes. unit:m" default:"10"`
+	WebhookPort          int  `help:"The port that the webhook server serves at." default:"9443"`
+	EnableLeaderElection bool `help:"Enable leader election for controller manager. Enable intensive information collection during the reconcile process." default:"false"`
+	EnableWebhooks       bool `help:"Enable webhooks for controller manager." default:"false"`
+	SyncPeriod           int  `help:"The interval between two adjacent local cache refreshes. unit:m" default:"10"`
 
 	AdminAuthConfig
 	AnsiblePlaybookConfig

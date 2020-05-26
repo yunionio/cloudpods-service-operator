@@ -9,7 +9,7 @@ import (
 func TestParseOptions(t *testing.T) {
 	want := OperatroOptions{
 		BaseOptions:          structarg.BaseOptions{},
-		MetricsAddr:          "127.0.0.1:8080",
+		WebhookPort:          12345,
 		EnableLeaderElection: true,
 		SyncPeriod:           15,
 		AdminAuthConfig: AdminAuthConfig{

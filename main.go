@@ -53,8 +53,8 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
-		MetricsBindAddress: options.Options.MetricsAddr,
-		Port:               9443,
+		MetricsBindAddress: "127.0.0.1:8080",
+		Port:               options.Options.WebhookPort,
 		LeaderElection:     options.Options.EnableLeaderElection,
 		LeaderElectionID:   "7ddf82e9.yunion.io",
 		SyncPeriod:         &sp,
