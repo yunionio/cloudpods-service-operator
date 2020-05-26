@@ -3,8 +3,6 @@
 ROOT_DIR := $(CURDIR)
 BUILD_DIR := $(ROOT_DIR)/_output
 
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -39,7 +37,7 @@ uninstall: manifests
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/manager && kustomize edit set image controller=$(REGISTRY)/onecloud-service-operator:$(VERSION)
 	kustomize build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
@@ -60,16 +58,16 @@ generate: controller-gen
 
 # Build the docker image
 docker-build: test 
-	docker build . -t $(REGISTRY)/service-operator:$(VERSION)
+	docker build . -t $(REGISTRY)/onecloud-service-operator:$(VERSION)
 
 # Push the docker image
 docker-push:
-	docker push $(REGISTRY)/service-operator:$(VERSION)
+	docker push $(REGISTRY)/onecloud-service-operator:$(VERSION)
 
 # Simple operator for build and push image in auto build env
 image: 
-	docker build . -t $(REGISTRY)/service-operator:$(VERSION)
-	docker push $(REGISTRY)/service-operator:$(VERSION)
+	docker build . -t $(REGISTRY)/onecloud-service-operator:$(VERSION)
+	docker push $(REGISTRY)/onecloud-service-operator:$(VERSION)
 
 # find or download controller-gen
 # download controller-gen if necessary
