@@ -23,7 +23,7 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
 
-	"yunion.io/x/onecloud-resource-operator/pkg/options"
+	"yunion.io/x/onecloud-service-operator/pkg/options"
 )
 
 var AuthConfig AdminAuthConfig

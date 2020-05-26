@@ -23,8 +23,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	onecloudv1 "yunion.io/x/onecloud-resource-operator/api/v1"
-	"yunion.io/x/onecloud-resource-operator/pkg/provider"
+	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/pkg/provider"
 )
 
 func dealErr(ctx context.Context, logger logr.Logger, sclient client.StatusClient, re onecloudv1.IResource,

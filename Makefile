@@ -67,11 +67,11 @@ output_dir:
 
 # Build the docker image
 docker-build: test generate-crd-yaml
-	docker build . -t $(REGISTRY)/onecloud-resource-operator:$(VERSION)
+	docker build . -t $(REGISTRY)/service-operator:$(VERSION)
 
 # Push the docker image
 docker-push:
-	docker push $(REGISTRY)/onecloud-resource-operator:$(VERSION)
+	docker push $(REGISTRY)/service-operator:$(VERSION)
 
 image: docker-build docker-push
 

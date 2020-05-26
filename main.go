@@ -26,10 +26,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	onecloudv1 "yunion.io/x/onecloud-resource-operator/api/v1"
-	"yunion.io/x/onecloud-resource-operator/controllers"
-	"yunion.io/x/onecloud-resource-operator/pkg/options"
-	"yunion.io/x/onecloud-resource-operator/pkg/provider"
+	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/controllers"
+	"yunion.io/x/onecloud-service-operator/pkg/options"
+	"yunion.io/x/onecloud-service-operator/pkg/provider"
 	// +kubebuilder:scaffold:imports
 )
 
