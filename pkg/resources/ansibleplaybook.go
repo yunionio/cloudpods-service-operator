@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package resources
 
 import (
 	"context"
@@ -34,10 +34,30 @@ func init() {
 	Register(ResourceAP, modules.AnsiblePlaybooksV2.ResourceManager)
 }
 
-func (oc OnecloudProvider) APCreate(ctx context.Context, ap *onecloudv1.AnsiblePlaybook,
-	hosts []AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate,
-	commonVars map[string]interface{}) (onecloudv1.ExternalInfoBase,
-	error) {
+type AnsiblePlaybook struct {
+	AnsiblePlaybook *onecloudv1.AnsiblePlaybook
+}
+
+func NewAnisblePlaybook(ap *onecloudv1.AnsiblePlaybook) AnsiblePlaybook {
+	return AnsiblePlaybook{ap}
+}
+
+type APCreateParams struct {
+	Hosts      []AnsiblePlaybookHost
+	Apt        *onecloudv1.AnsiblePlaybookTemplate
+	CommonVars map[string]interface{}
+}
+
+func (an AnsiblePlaybook) Create(ctx context.Context, params interface{}) (onecloudv1.ExternalInfoBase, error) {
+	cp, ok := params.(APCreateParams)
+	if !ok {
+		return onecloudv1.ExternalInfoBase{}, fmt.Errorf("Invalid create params")
+	}
+	return an.create(ctx, cp.Hosts, cp.Apt, cp.CommonVars)
+}
+
+func (an AnsiblePlaybook) create(ctx context.Context, hosts []AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate, commonVars map[string]interface{}) (onecloudv1.ExternalInfoBase, error) {
+	ap := an.AnsiblePlaybook
 	// build inventory
 	params := jsonutils.NewDict()
 	params.Set("playbook", jsonutils.NewString(apt.Spec.Playbook))
@@ -50,7 +70,7 @@ func (oc OnecloudProvider) APCreate(ctx context.Context, ap *onecloudv1.AnsibleP
 	}
 	inv := ansiblev2.NewInventory(args...)
 	for i := range hosts {
-		host := oc.apHosts(hosts[i])
+		host := an.apHosts(hosts[i])
 		inv.SetHost(hosts[i].VM.Name, host)
 	}
 	params.Set("inventory", jsonutils.NewString(inv.String()))
@@ -60,7 +80,8 @@ func (oc OnecloudProvider) APCreate(ctx context.Context, ap *onecloudv1.AnsibleP
 	return extInfo, err
 }
 
-func (oc OnecloudProvider) APDelete(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (bool, onecloudv1.ExternalInfoBase, error) {
+func (an AnsiblePlaybook) Delete(ctx context.Context) (bool, onecloudv1.ExternalInfoBase, error) {
+	ap := an.AnsiblePlaybook
 	_, extInfo, err := RequestAP.Operation(OperGet).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
 	if err != nil {
 		return false, extInfo, err
@@ -74,7 +95,8 @@ func (oc OnecloudProvider) APDelete(ctx context.Context, ap *onecloudv1.AnsibleP
 	return true, extInfo, err
 }
 
-func (oc OnecloudProvider) APGetStatus(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (*onecloudv1.AnsiblePlaybookStatus, error) {
+func (an AnsiblePlaybook) GetStatus(ctx context.Context) (*onecloudv1.AnsiblePlaybookStatus, error) {
+	ap := an.AnsiblePlaybook
 	_, extInfo, err := RequestAP.Operation(OperGetStatus).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
 	if err != nil {
 		return nil, err
@@ -93,7 +115,8 @@ func (oc OnecloudProvider) APGetStatus(ctx context.Context, ap *onecloudv1.Ansib
 	return apStatus, nil
 }
 
-func (oc OnecloudProvider) APReconcile(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (*onecloudv1.AnsiblePlaybookStatus, error) {
+func (an AnsiblePlaybook) Reconcile(ctx context.Context) (*onecloudv1.AnsiblePlaybookStatus, error) {
+	ap := an.AnsiblePlaybook
 	ret, extInfo, err := RequestAP.Operation(OperGet).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
 	if err != nil {
 		return nil, err
@@ -116,7 +139,7 @@ func (oc OnecloudProvider) APReconcile(ctx context.Context, ap *onecloudv1.Ansib
 	return apStatus, nil
 }
 
-func (oc OnecloudProvider) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
+func (an AnsiblePlaybook) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
 	var ip string
 	switch {
 	case len(host.VM.Status.ExternalInfo.Eip) > 0:
@@ -140,4 +163,9 @@ func (oc OnecloudProvider) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
 	h := ansiblev2.NewHost()
 	h.Vars = vars
 	return h
+}
+
+type AnsiblePlaybookHost struct {
+	VM   *onecloudv1.VirtualMachine
+	Vars map[string]interface{}
 }

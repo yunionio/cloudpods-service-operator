@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package resources
 
 import (
 	comapi "yunion.io/x/onecloud/pkg/apis/compute"
@@ -20,28 +20,28 @@ import (
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 )
 
-func (OnecloudProvider) convertInt64Ptr(n *int64) int {
+func convertInt64Ptr(n *int64) int {
 	if n == nil {
 		return 0
 	}
 	return int(*n)
 }
 
-func (OnecloudProvider) convertInt32Ptr(n *int32) int {
+func convertInt32Ptr(n *int32) int {
 	if n == nil {
 		return 0
 	}
 	return int(*n)
 }
 
-func (OnecloudProvider) convertBoolPrt(b *bool) bool {
+func convertBoolPrt(b *bool) bool {
 	if b == nil {
 		return false
 	}
 	return *b
 }
 
-func (OnecloudProvider) ConvertVMDisk(config onecloudv1.VMDiskSpec) comapi.DiskConfig {
+func ConvertVMDisk(config onecloudv1.VMDiskSpec) comapi.DiskConfig {
 	return comapi.DiskConfig{
 		ImageId: config.Image,
 		SizeMb:  int(config.SizeGB) * 1024,
@@ -52,26 +52,26 @@ func (OnecloudProvider) ConvertVMDisk(config onecloudv1.VMDiskSpec) comapi.DiskC
 	}
 }
 
-func (oc OnecloudProvider) ConvertVMNetwork(config onecloudv1.VMNetworkSpec) comapi.NetworkConfig {
+func ConvertVMNetwork(config onecloudv1.VMNetworkSpec) comapi.NetworkConfig {
 	return comapi.NetworkConfig{
 		Network: config.Network,
 		Address: config.Address,
 	}
 }
 
-func (oc OnecloudProvider) ConvertVMConfig(config onecloudv1.VirtualMachineConfig) comapi.ServerConfigs {
+func ConvertVMConfig(config onecloudv1.VirtualMachineConfig) comapi.ServerConfigs {
 	disks := make([]*comapi.DiskConfig, 1, len(config.DataDisks)+1)
-	rootDisk := oc.ConvertVMDisk(config.RootDisk)
+	rootDisk := ConvertVMDisk(config.RootDisk)
 	rootDisk.DiskType = "sys"
 	disks[0] = &rootDisk
 	for i := range config.DataDisks {
-		disk := oc.ConvertVMDisk(config.DataDisks[i])
+		disk := ConvertVMDisk(config.DataDisks[i])
 		disk.DiskType = "data"
 		disks = append(disks, &disk)
 	}
 	networks := make([]*comapi.NetworkConfig, 0, len(config.Networks))
 	for i := range config.Networks {
-		network := oc.ConvertVMNetwork(config.Networks[i])
+		network := ConvertVMNetwork(config.Networks[i])
 		networks = append(networks, &network)
 	}
 	return comapi.ServerConfigs{
@@ -87,19 +87,19 @@ func (oc OnecloudProvider) ConvertVMConfig(config onecloudv1.VirtualMachineConfi
 	}
 }
 
-func (oc OnecloudProvider) ConvertVM(config onecloudv1.VirtualMachineSpec) comapi.ServerCreateInput {
-	serverConfig := oc.ConvertVMConfig(config.VmConfig)
+func ConvertVM(config onecloudv1.VirtualMachineSpec) comapi.ServerCreateInput {
+	serverConfig := ConvertVMConfig(config.VmConfig)
 	createInput := comapi.ServerCreateInput{
 		ServerConfigs: &serverConfig,
 		KeypairId:     config.KeyPairId,
 		Password:      config.Password,
 		ResetPassword: config.ResetPassword,
 		Duration:      config.BillDuration,
-		AutoRenew:     oc.convertBoolPrt(config.AutoRenew),
+		AutoRenew:     convertBoolPrt(config.AutoRenew),
 	}
 
-	createInput.VcpuCount = oc.convertInt64Ptr(config.VmConfig.VcpuCount)
-	createInput.VmemSize = oc.convertInt64Ptr(config.VmConfig.VmemSizeGB) * 1024
+	createInput.VcpuCount = convertInt64Ptr(config.VmConfig.VcpuCount)
+	createInput.VmemSize = convertInt64Ptr(config.VmConfig.VmemSizeGB) * 1024
 	createInput.Description = config.Desciption
 	createInput.Project = config.Project.Project
 	createInput.ProjectDomain = config.Project.PoejectDomain
@@ -111,7 +111,7 @@ func (oc OnecloudProvider) ConvertVM(config onecloudv1.VirtualMachineSpec) comap
 	createInput.AutoStart = true
 
 	if config.NewEip != nil {
-		createInput.EipBw = oc.convertInt64Ptr(config.NewEip.Bw)
+		createInput.EipBw = convertInt64Ptr(config.NewEip.Bw)
 		createInput.EipChargeType = config.NewEip.ChargeType
 		createInput.EipAutoDellocate = true
 	} else {

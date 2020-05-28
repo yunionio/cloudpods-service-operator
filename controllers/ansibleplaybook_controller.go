@@ -34,7 +34,7 @@ import (
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud-service-operator/pkg/options"
-	"yunion.io/x/onecloud-service-operator/pkg/provider"
+	"yunion.io/x/onecloud-service-operator/pkg/resources"
 )
 
 var (
@@ -66,8 +66,10 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	remoteAp := resources.NewAnisblePlaybook(&ansiblePlaybook)
+
 	dealErr := func(err error) (ctrl.Result, error) {
-		return dealErr(ctx, log, r, &ansiblePlaybook, provider.ResourceAP, err)
+		return dealErr(ctx, log, r, &ansiblePlaybook, resources.ResourceAP, err)
 	}
 
 	myFinalizerName := "virtualmachine.finalizers.onecloud.yunion.io"
@@ -90,7 +92,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 				}
 				return ctrl.Result{}, nil
 			}
-			ret, err := r.Delete(ctx, &ansiblePlaybook)
+			ret, err := r.realDelete(ctx, remoteAp)
 			if err != nil {
 				return dealErr(err)
 			}
@@ -108,7 +110,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			return ctrl.Result{}, nil
 		}
 		// sync info first
-		apStatus, err := provider.Provider.APReconcile(ctx, &ansiblePlaybook)
+		apStatus, err := remoteAp.Reconcile(ctx)
 		if err != nil {
 			return dealErr(err)
 		}
@@ -117,7 +119,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 		}
 		// clear this
-		if err := r.apClear(ctx, &ansiblePlaybook); err != nil {
+		if err := r.clear(ctx, remoteAp); err != nil {
 			return dealErr(err)
 		}
 		return ctrl.Result{RequeueAfter: time.Second, Requeue: true}, nil
@@ -150,7 +152,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			return ctrl.Result{}, nil
 		}
 
-		hosts := make([]provider.AnsiblePlaybookHost, 0, len(ansiblePlaybook.Spec.Inventory))
+		hosts := make([]resources.AnsiblePlaybookHost, 0, len(ansiblePlaybook.Spec.Inventory))
 		// wair for all VitualMachines running
 		for _, host := range ansiblePlaybook.Spec.Inventory {
 			nameSpacedName := types.NamespacedName{
@@ -221,7 +223,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 				)
 				return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 			}
-			hosts = append(hosts, provider.AnsiblePlaybookHost{
+			hosts = append(hosts, resources.AnsiblePlaybookHost{
 				VM:   &vm,
 				Vars: vars,
 			})
@@ -249,16 +251,16 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		}
 
 		// all other resources ready, create ansible playbook
-		return ctrl.Result{}, r.apCreate(ctx, &ansiblePlaybook, hosts, &playbookTemplate, commonVars)
+		return ctrl.Result{}, r.create(ctx, remoteAp, hosts, &playbookTemplate, commonVars)
 	}
 
-	var recon func(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (*onecloudv1.AnsiblePlaybookStatus, error)
+	var recon func(ctx context.Context) (*onecloudv1.AnsiblePlaybookStatus, error)
 
-	recon = provider.Provider.APGetStatus
+	recon = remoteAp.GetStatus
 	if dense {
-		recon = provider.Provider.APReconcile
+		recon = remoteAp.Reconcile
 	}
-	apStatus, err := recon(ctx, &ansiblePlaybook)
+	apStatus, err := recon(ctx)
 	if err != nil {
 		return dealErr(err)
 	}
@@ -268,7 +270,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	if ansiblePlaybook.Status.Phase == onecloudv1.ResourceFailed {
-		if err := r.apDelete(ctx, &ansiblePlaybook); err != nil {
+		if err := r.delete(ctx, remoteAp); err != nil {
 			return dealErr(err)
 		}
 		return ctrl.Result{}, nil
@@ -287,8 +289,9 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	return ctrl.Result{}, nil
 }
 
-func (r *AnsiblePlaybookReconciler) Delete(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) (ctrl.Result, error) {
-	apStatus, err := provider.Provider.APGetStatus(ctx, ap)
+func (r *AnsiblePlaybookReconciler) realDelete(ctx context.Context, remoteAp resources.AnsiblePlaybook) (ctrl.Result, error) {
+	ap := remoteAp.AnsiblePlaybook
+	apStatus, err := remoteAp.GetStatus(ctx)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -306,14 +309,14 @@ func (r *AnsiblePlaybookReconciler) Delete(ctx context.Context, ap *onecloudv1.A
 		return ctrl.Result{Requeue: true, RequeueAfter: 2 * time.Second}, nil
 	}
 	// delete this
-	if err := r.apDelete(ctx, ap); err != nil {
+	if err := r.delete(ctx, remoteAp); err != nil {
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }
 
-func (r *AnsiblePlaybookReconciler) apCreate(ctx context.Context, ap *onecloudv1.AnsiblePlaybook,
-	hosts []provider.AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate, commonVars map[string]interface{}) error {
+func (r *AnsiblePlaybookReconciler) create(ctx context.Context, remoteAp resources.AnsiblePlaybook, hosts []resources.AnsiblePlaybookHost, apt *onecloudv1.AnsiblePlaybookTemplate, commonVars map[string]interface{}) error {
+	ap := remoteAp.AnsiblePlaybook
 	// check if recreate items has reached the max limit
 	maxRetryTimes := r.maxRetryTimes(ap)
 	if ap.Status.TryTimes > maxRetryTimes {
@@ -321,7 +324,7 @@ func (r *AnsiblePlaybookReconciler) apCreate(ctx context.Context, ap *onecloudv1
 		ap.Status.Reason = fmt.Sprintf("The number of consecutive retry failures exceeds the maximum %d", maxRetryTimes)
 		return r.Status().Update(ctx, ap)
 	}
-	extInfo, err := provider.Provider.APCreate(ctx, ap, hosts, apt, commonVars)
+	extInfo, err := remoteAp.Create(ctx, resources.APCreateParams{Hosts: hosts, Apt: apt, CommonVars: commonVars})
 	if err != nil {
 		return err
 	}
@@ -331,8 +334,9 @@ func (r *AnsiblePlaybookReconciler) apCreate(ctx context.Context, ap *onecloudv1
 	return r.Status().Update(ctx, ap)
 }
 
-func (r *AnsiblePlaybookReconciler) apDelete(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) error {
-	isDelete, extInfo, err := provider.Provider.APDelete(ctx, ap)
+func (r *AnsiblePlaybookReconciler) delete(ctx context.Context, remoteAp resources.AnsiblePlaybook) error {
+	ap := remoteAp.AnsiblePlaybook
+	isDelete, extInfo, err := remoteAp.Delete(ctx)
 	if err != nil {
 		return err
 	}
@@ -343,8 +347,8 @@ func (r *AnsiblePlaybookReconciler) apDelete(ctx context.Context, ap *onecloudv1
 	return r.Status().Update(ctx, ap)
 }
 
-func (r *AnsiblePlaybookReconciler) apClear(ctx context.Context, ap *onecloudv1.AnsiblePlaybook) error {
-	_, _, err := provider.Provider.APDelete(ctx, ap)
+func (r *AnsiblePlaybookReconciler) clear(ctx context.Context, remoteAp resources.AnsiblePlaybook) error {
+	_, _, err := remoteAp.Delete(ctx)
 	return err
 }
 

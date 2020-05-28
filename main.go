@@ -26,8 +26,8 @@ import (
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud-service-operator/controllers"
+	"yunion.io/x/onecloud-service-operator/pkg/auth"
 	"yunion.io/x/onecloud-service-operator/pkg/options"
-	"yunion.io/x/onecloud-service-operator/pkg/provider"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -45,7 +45,7 @@ func init() {
 
 func main() {
 	options.ParseOptions()
-	provider.Provider.Init()
+	auth.Init()
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	sp := time.Duration(options.Options.SyncPeriod) * time.Minute
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package resources
 
 import (
 	"context"
@@ -27,23 +27,8 @@ import (
 	"yunion.io/x/pkg/utils"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/pkg/auth"
 )
-
-type IProvider interface {
-	InitConfig()
-	Init()
-	VMCreate(ctx context.Context, vm *onecloudv1.VirtualMachine) error
-	VMGetStatus(ctx context.Context, vm *onecloudv1.VirtualMachine) (onecloudv1.VirtualMachineStatus, error)
-	VMIsShutdown(status onecloudv1.VirtualMachineStatus) bool
-	VMIsRunning(status onecloudv1.VirtualMachineStatus) bool
-	VMIsCreating(status onecloudv1.VirtualMachineStatus) bool
-	VMDefaultRecreatePolicy() *onecloudv1.RecreatePolicy
-}
-
-var Provider OnecloudProvider
-
-type OnecloudProvider struct {
-}
 
 // ReconcileOper describe a Operation about reconcile process.
 // It invovles a func, desc and the phase needed.
@@ -236,7 +221,7 @@ func (r SRequest) Apply(ctx context.Context, id string, params *jsonutils.JSONDi
 	if params == nil {
 		params = jsonutils.NewDict()
 	}
-	ret, err := requestFunc(AdminSession(ctx), id, r.params(params))
+	ret, err := requestFunc(auth.AdminSession(ctx), id, r.params(params))
 	if err != nil {
 		client, _ := err.(*httputils.JSONClientError)
 		return nil, status, &SRequestErr{
@@ -270,9 +255,4 @@ func (r SRequest) params(dict *jsonutils.JSONDict) *jsonutils.JSONDict {
 		return dict
 	}
 	return mergeJsonDict(dict, r.defautParams)
-}
-
-type AnsiblePlaybookHost struct {
-	VM   *onecloudv1.VirtualMachine
-	Vars map[string]interface{}
 }

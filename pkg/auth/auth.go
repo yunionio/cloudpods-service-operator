@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package auth
 
 import (
 	"context"
@@ -63,7 +63,7 @@ func (config AdminAuthConfig) ToAuthInfo() *auth.AuthInfo {
 	}
 }
 
-func (op OnecloudProvider) Init() {
+func Init() {
 	AuthConfig = AdminAuthConfig{
 		Region:        options.Options.Region,
 		AuthURL:       options.Options.AuthURL,

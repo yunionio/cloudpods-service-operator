@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package provider
+package resources
 
 import (
 	"context"
@@ -30,8 +30,16 @@ import (
 	"yunion.io/x/onecloud-service-operator/pkg/util"
 )
 
-func (oc OnecloudProvider) VMCreate(ctx context.Context, vm *onecloudv1.VirtualMachine) (onecloudv1.ExternalInfoBase, error) {
-	serverCreateInput := oc.ConvertVM(vm.Spec)
+type VirtualMachine struct {
+	VirtualMachine *onecloudv1.VirtualMachine
+}
+
+func NewVirtualMachine(vm *onecloudv1.VirtualMachine) VirtualMachine {
+	return VirtualMachine{vm}
+}
+func (vi VirtualMachine) Create(ctx context.Context, _ interface{}) (onecloudv1.ExternalInfoBase, error) {
+	vm := vi.VirtualMachine
+	serverCreateInput := ConvertVM(vm.Spec)
 	if len(serverCreateInput.Name) == 0 && len(serverCreateInput.GenerateName) == 0 {
 		serverCreateInput.GenerateName = vm.ObjectMeta.Name
 	}
@@ -40,8 +48,8 @@ func (oc OnecloudProvider) VMCreate(ctx context.Context, vm *onecloudv1.VirtualM
 	return s, e
 }
 
-func (oc OnecloudProvider) VMDelete(ctx context.Context, vm *onecloudv1.VirtualMachine) (onecloudv1.ExternalInfoBase,
-	error) {
+func (vi VirtualMachine) Delete(ctx context.Context) (onecloudv1.ExternalInfoBase, error) {
+	vm := vi.VirtualMachine
 	// disable delete first
 	params := jsonutils.NewDict()
 	params.Set("disable_delete", jsonutils.JSONFalse)
@@ -54,8 +62,8 @@ func (oc OnecloudProvider) VMDelete(ctx context.Context, vm *onecloudv1.VirtualM
 	return s, e
 }
 
-func (oc OnecloudProvider) VMGetStatus(ctx context.Context, vm *onecloudv1.VirtualMachine) (vmStatus *onecloudv1.
-	VirtualMachineStatus, err error) {
+func (vi VirtualMachine) GetStatus(ctx context.Context) (vmStatus *onecloudv1.VirtualMachineStatus, err error) {
+	vm := vi.VirtualMachine
 	lastInfo := vm.Status.ExternalInfo.ExternalInfoBase
 	_, extInfo, err := RequestVM.Operation(OperGetStatus).Apply(ctx, vm.Status.ExternalInfo.Id, nil)
 	if err != nil {
@@ -68,19 +76,19 @@ func (oc OnecloudProvider) VMGetStatus(ctx context.Context, vm *onecloudv1.Virtu
 	)
 	// The order about checking info.Status is Critical
 	switch {
-	case oc.isRunning(extInfo):
+	case vi.isRunning(extInfo):
 		phase = onecloudv1.ResourceRunning
-	case oc.isStopped(extInfo):
+	case vi.isStopped(extInfo):
 		phase = onecloudv1.ResourceReady
-	case oc.isFailed(extInfo, lastInfo):
+	case vi.isFailed(extInfo, lastInfo):
 		phase = onecloudv1.ResourceFailed
-	case oc.needSync(extInfo):
+	case vi.needSync(extInfo):
 		_, extInfo, err = RequestVMSyncstatus.Apply(ctx, vm.Status.ExternalInfo.Id, nil)
 		if err != nil {
 			return
 		}
 		phase = onecloudv1.ResourcePending
-	case oc.isPendingWithoutFailed(extInfo):
+	case vi.isPendingWithoutFailed(extInfo):
 		phase = onecloudv1.ResourcePending
 	default:
 		recreatePolicy := vm.Spec.RecreatePolicy
@@ -111,22 +119,22 @@ func (oc OnecloudProvider) VMGetStatus(ctx context.Context, vm *onecloudv1.Virtu
 	return
 }
 
-func (oc OnecloudProvider) VMDefaultRecreatePolicy() *onecloudv1.RecreatePolicy {
+func (vi VirtualMachine) DefaultRecreatePolicy() *onecloudv1.RecreatePolicy {
 	return recreatePolicyDefault
 }
 
-func (oc OnecloudProvider) VMStart(ctx context.Context, vm *onecloudv1.VirtualMachine) (onecloudv1.ExternalInfoBase, error) {
-	_, s, e := RequestVM.Operation(OperStart).Apply(ctx, vm.Status.ExternalInfo.Id, nil)
+func (vi VirtualMachine) Start(ctx context.Context) (onecloudv1.ExternalInfoBase, error) {
+	_, s, e := RequestVM.Operation(OperStart).Apply(ctx, vi.VirtualMachine.Status.ExternalInfo.Id, nil)
 	return s, e
 }
 
-func (oc OnecloudProvider) VMStop(ctx context.Context, vm *onecloudv1.VirtualMachine) (onecloudv1.ExternalInfoBase, error) {
-	_, s, e := RequestVM.Operation(OperStop).Apply(ctx, vm.Status.ExternalInfo.Id, nil)
+func (vi VirtualMachine) Stop(ctx context.Context) (onecloudv1.ExternalInfoBase, error) {
+	_, s, e := RequestVM.Operation(OperStop).Apply(ctx, vi.VirtualMachine.Status.ExternalInfo.Id, nil)
 	return s, e
 }
 
-func (oc OnecloudProvider) VMReconcile(ctx context.Context, logger logr.Logger,
-	vm *onecloudv1.VirtualMachine) (oper *ReconcileOper, vmInfo *onecloudv1.VMInfo, err error) {
+func (vi VirtualMachine) Reconcile(ctx context.Context, logger logr.Logger) (oper *ReconcileOper, vmInfo *onecloudv1.VMInfo, err error) {
+	vm := vi.VirtualMachine
 	// fetch vm details
 	vmJson, extInfo, err := RequestVMGetDetails.Apply(ctx, vm.Status.ExternalInfo.Id, nil)
 	if err != nil {
@@ -150,31 +158,31 @@ func (oc OnecloudProvider) VMReconcile(ctx context.Context, logger logr.Logger,
 	}
 
 	// update operator which is a lightweight operation
-	oper = oc.vmUpdate(&serverDetail, &vm.Spec)
+	oper = vi.update(&serverDetail, &vm.Spec)
 	if oper != nil {
 		return
 	}
 	// change config
-	oper = oc.VMChangeConfig(logger, &serverDetail, &vm.Spec.VmConfig)
+	oper = vi.changeConfig(logger, &serverDetail, &vm.Spec.VmConfig)
 	if oper != nil {
 		return
 	}
 	// disk resize
-	oper = oc.vmDiskResize(logger, &serverDetail, &vm.Spec.VmConfig)
+	oper = vi.diskResize(logger, &serverDetail, &vm.Spec.VmConfig)
 	if oper != nil {
 		return
 	}
 	// changebw
-	//oper, err = oc.eipChangeBw(ctx, logger, &serverDetail, &vm.Spec)
+	//oper, err = vi.eipChangeBw(ctx, logger, &serverDetail, &vm.Spec)
 	//if err != nil || oper != nil {
 	//	return
 	//}
 	// set secgroups
-	oper = oc.setSecGroups(&serverDetail, &vm.Spec)
+	oper = vi.setSecGroups(&serverDetail, &vm.Spec)
 	return
 }
 
-func (oc OnecloudProvider) eipChangeBw(ctx context.Context, logger logr.Logger, serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) (*ReconcileOper, error) {
+func (vi VirtualMachine) eipChangeBw(ctx context.Context, logger logr.Logger, serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) (*ReconcileOper, error) {
 	if len(vmSpec.Eip) != 0 && vmSpec.Eip != serverDetail.Eip {
 		logger.V(1).Info(fmt.Sprintf("The actual eip '%s' is different from this '%s' in spec", serverDetail.Eip,
 			vmSpec.Eip))
@@ -207,7 +215,7 @@ func (oc OnecloudProvider) eipChangeBw(ctx context.Context, logger logr.Logger, 
 	return ro, nil
 }
 
-func (oc OnecloudProvider) setSecGroups(serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) *ReconcileOper {
+func (vi VirtualMachine) setSecGroups(serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) *ReconcileOper {
 	count := len(serverDetail.Secgroups)
 	update := false
 	for i := range vmSpec.Secgropus {
@@ -239,7 +247,7 @@ func (oc OnecloudProvider) setSecGroups(serverDetail *comapi.ServerDetails, vmSp
 	return ro
 }
 
-func (oc OnecloudProvider) vmUpdate(serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) *ReconcileOper {
+func (vi VirtualMachine) update(serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) *ReconcileOper {
 	operDesc := OperatorDesc{Name: "Update"}
 	updateParams := jsonutils.NewDict()
 	if serverDetail.Name != vmSpec.Name && vmSpec.NameCheck != nil && *vmSpec.NameCheck && len(vmSpec.Name) > 0 {
@@ -264,7 +272,7 @@ func (oc OnecloudProvider) vmUpdate(serverDetail *comapi.ServerDetails, vmSpec *
 	return nil
 }
 
-func (oc OnecloudProvider) vmDiskResize(logger logr.Logger, serverDetails *comapi.ServerDetails,
+func (vi VirtualMachine) diskResize(logger logr.Logger, serverDetails *comapi.ServerDetails,
 	vmConfig *onecloudv1.VirtualMachineConfig) *ReconcileOper {
 	diskSizeMap := make(map[string]int64)
 	odesc := OperatorDesc{Name: "Disk Resize"}
@@ -315,7 +323,7 @@ func (oc OnecloudProvider) vmDiskResize(logger logr.Logger, serverDetails *comap
 }
 
 // support
-func (oc OnecloudProvider) VMChangeConfig(logger logr.Logger, serverDetails *comapi.ServerDetails,
+func (vi VirtualMachine) changeConfig(logger logr.Logger, serverDetails *comapi.ServerDetails,
 	vmConfig *onecloudv1.VirtualMachineConfig) *ReconcileOper {
 	var (
 		params   = jsonutils.NewDict()
@@ -323,14 +331,14 @@ func (oc OnecloudProvider) VMChangeConfig(logger logr.Logger, serverDetails *com
 		needStop = false
 	)
 	if len(vmConfig.InstanceType) == 0 {
-		if vcpuCount := oc.convertInt64Ptr(vmConfig.VcpuCount); vcpuCount != serverDetails.VcpuCount {
+		if vcpuCount := convertInt64Ptr(vmConfig.VcpuCount); vcpuCount != serverDetails.VcpuCount {
 			if vcpuCount < serverDetails.VcpuCount {
 				needStop = true
 			}
 			params.Set("vcpu_count", jsonutils.NewInt(int64(vcpuCount)))
 			adesc.Appendf(`change "%s" from (%d) to (%d)`, "vcpu_count", serverDetails.VcpuCount, vcpuCount)
 		}
-		if vmemSize := oc.convertInt64Ptr(vmConfig.VmemSizeGB) * 1024; vmemSize != serverDetails.VmemSize {
+		if vmemSize := convertInt64Ptr(vmConfig.VmemSizeGB) * 1024; vmemSize != serverDetails.VmemSize {
 			if vmemSize < serverDetails.VmemSize {
 				needStop = true
 			}
@@ -352,11 +360,11 @@ func (oc OnecloudProvider) VMChangeConfig(logger logr.Logger, serverDetails *com
 			disks.Add(jsonutils.Marshal(serverDetails.DisksInfo[i+1]))
 		}
 		for i := realN; i < specN; i++ {
-			diskSpec := oc.ConvertVMDisk(vmConfig.DataDisks[i])
+			diskSpec := ConvertVMDisk(vmConfig.DataDisks[i])
 			diskSpec.Index = i + 1
 			diskSpec.DiskType = "data"
 			disks.Add(jsonutils.Marshal(diskSpec))
-			adesc.Appendf("create Data Disk(%s)", oc.vmDiskSpecString(vmConfig.DataDisks[i]))
+			adesc.Appendf("create Data Disk(%s)", vi.diskSpecString(vmConfig.DataDisks[i]))
 		}
 		params.Set("disks", disks)
 	} else if specN < realN {
@@ -385,7 +393,7 @@ func (oc OnecloudProvider) VMChangeConfig(logger logr.Logger, serverDetails *com
 	}
 }
 
-func (oc OnecloudProvider) vmDiskSpecString(spec onecloudv1.VMDiskSpec) string {
+func (vi VirtualMachine) diskSpecString(spec onecloudv1.VMDiskSpec) string {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("size: %dGB, ", spec.SizeGB))
 	if len(spec.Image) != 0 {
@@ -460,7 +468,7 @@ var (
 	}
 )
 
-func (oc OnecloudProvider) isPendingWithoutFailed(info onecloudv1.ExternalInfoBase) bool {
+func (vi VirtualMachine) isPendingWithoutFailed(info onecloudv1.ExternalInfoBase) bool {
 	if onecloudutils.IsInStringArray(info.Status, vmCreatingStatus) {
 		return true
 	}
@@ -482,11 +490,11 @@ func (oc OnecloudProvider) isPendingWithoutFailed(info onecloudv1.ExternalInfoBa
 	return false
 }
 
-func (oc OnecloudProvider) isRunning(info onecloudv1.ExternalInfoBase) bool {
+func (vi VirtualMachine) isRunning(info onecloudv1.ExternalInfoBase) bool {
 	return info.Status == comapi.VM_RUNNING
 }
 
-func (oc OnecloudProvider) isFailed(info, lastInfo onecloudv1.ExternalInfoBase) bool {
+func (vi VirtualMachine) isFailed(info, lastInfo onecloudv1.ExternalInfoBase) bool {
 	// That action "RequestVMChangeConfig" result in status "deploy_fail" and "disk_fail" maybe not failed,
 	// it's better to syncstatus first.
 	if (info.Status == comapi.VM_DEPLOY_FAILED || info.Status == comapi.VM_DISK_FAILED) && lastInfo.Action != RequestVMSyncstatus.ResourceAction() {
@@ -495,10 +503,10 @@ func (oc OnecloudProvider) isFailed(info, lastInfo onecloudv1.ExternalInfoBase) 
 	return onecloudutils.IsInStringArray(info.Status, vmFailedStatus)
 }
 
-func (oc OnecloudProvider) needSync(info onecloudv1.ExternalInfoBase) bool {
+func (vi VirtualMachine) needSync(info onecloudv1.ExternalInfoBase) bool {
 	return strings.Contains(info.Status, "fail") || strings.Contains(info.Status, "failed")
 }
 
-func (oc OnecloudProvider) isStopped(info onecloudv1.ExternalInfoBase) bool {
+func (vi VirtualMachine) isStopped(info onecloudv1.ExternalInfoBase) bool {
 	return onecloudutils.IsInStringArray(info.Status, vmStopStatus)
 }
