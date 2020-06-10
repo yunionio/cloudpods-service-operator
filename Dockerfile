@@ -26,7 +26,7 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 
 # Install CRDs yaml
-COPY config/crd/bases/ /etc/yunion/crds/
+COPY config/crd/bases/ /etc/crds/
 
 # Install kubectl from Docker Hub.
 COPY --from=lachlanevenson/k8s-kubectl:v1.16.9 /usr/local/bin/kubectl /usr/local/bin/kubectl
