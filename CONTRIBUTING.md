@@ -29,3 +29,7 @@ kubebuilder create api --group onecloud --version v1 --kind AnsiblePlaybook
 ## 生成代码
 
 修改完代码之后，请执行`make manifests`以更新 manifests，执行`make generate`以更新自动生成的代码。
+
+## 生成文档
+
+修改完代码之后，请执行`make generate-doc`以更新文档。
