@@ -30,14 +30,14 @@ type IValue interface {
 
 // +kubebuilder:object:generate=false
 type IStore interface {
-	Value(ctx context.Context) (IValue, error)
+	GetValue(ctx context.Context) (IValue, error)
 }
 
 type StringStore struct {
 	// +optional
-	Direct string `json:"direct,omitempty"`
+	Value string `json:"value,omitempty"`
 	// +optional
-	Indirect *ObjectFieldReference `json:"indirect,omitempty"`
+	Reference *ObjectFieldReference `json:"reference,omitempty"`
 }
 
 type String string
@@ -54,11 +54,11 @@ func (sv String) Interface() interface{} {
 	return sv.String()
 }
 
-func (st *StringStore) Value(ctx context.Context) (IValue, error) {
-	if len(st.Direct) > 0 {
-		return String(st.Direct), nil
+func (st *StringStore) GetValue(ctx context.Context) (IValue, error) {
+	if len(st.Value) > 0 {
+		return String(st.Value), nil
 	}
-	in, err := st.Indirect.Value(ctx)
+	in, err := st.Reference.Value(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +75,9 @@ func (st *StringStore) Value(ctx context.Context) (IValue, error) {
 
 type IntOrStringStore struct {
 	// +optional
-	Direct *IntOrString `json:"direct,omitempty"`
+	Value *IntOrString `json:"value,omitempty"`
 	// +optional
-	Indirect *ObjectFieldReference `json:"indirect,omitempty"`
+	Reference *ObjectFieldReference `json:"reference,omitempty"`
 }
 
 type IntOrString struct {
@@ -121,11 +121,11 @@ func (isv *IntOrString) Interface() interface{} {
 	return isv
 }
 
-func (ist *IntOrStringStore) Value(ctx context.Context) (IValue, error) {
-	if ist.Direct != nil {
-		return ist.Direct, nil
+func (ist *IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
+	if ist.Value != nil {
+		return ist.Value, nil
 	}
-	in, err := ist.Indirect.Value(ctx)
+	in, err := ist.Reference.Value(ctx)
 	if err != nil {
 		return nil, err
 	}

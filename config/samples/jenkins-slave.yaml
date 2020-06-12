@@ -10,15 +10,15 @@ spec:
         name: jenkins-slave1
       vars:
         jenkins_slave_name:
-          direct: slave1
+          value: slave1
     - virtualMachine:
         name: jenkins-slave2
       vars:
         jenkins_slave_name:
-          direct: slave2
+          value: slave2
   vars:
     jenkins_master_hostname:
-      indirect:
+      reference:
         kind: VirtualMachine
         namespace: onecloud
         name: jenkins-master

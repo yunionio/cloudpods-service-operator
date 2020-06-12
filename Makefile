@@ -56,6 +56,10 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+# Generate doc
+generate-doc:
+	./scripts/gen-doc.sh
+
 # Build the docker image
 docker-build: test 
 	docker build . -t $(REGISTRY)/onecloud-service-operator:$(VERSION)

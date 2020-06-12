@@ -43,13 +43,7 @@ spec:
                   vars:
                     additionalProperties:
                       properties:
-                        direct:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          type: object
-                          x-kubernetes-int-or-string: true
-                        indirect:
+                        reference:
                           properties:
                             fieldPath:
                               type: string
@@ -69,6 +63,12 @@ spec:
                           - name
                           - namespace
                           type: object
+                        value:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          type: object
+                          x-kubernetes-int-or-string: true
                       type: object
                     description: Vars describes the unique values ​​of the VirtualMachine
                       corresponding to the variables in the AnsiblePlaybookTemplate.
@@ -148,13 +148,7 @@ spec:
             vars:
               additionalProperties:
                 properties:
-                  direct:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    type: object
-                    x-kubernetes-int-or-string: true
-                  indirect:
+                  reference:
                     properties:
                       fieldPath:
                         type: string
@@ -174,6 +168,12 @@ spec:
                     - name
                     - namespace
                     type: object
+                  value:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    type: object
+                    x-kubernetes-int-or-string: true
                 type: object
               description: Vars describe the public value about Vars in AnsiblePlaybookTemplate.
               type: object

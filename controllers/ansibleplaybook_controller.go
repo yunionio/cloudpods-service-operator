@@ -184,10 +184,10 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 			vars := make(map[string]interface{}, len(host.Vars))
 			for _, temVar := range playbookTemplate.Spec.Vars {
 				if value, ok := host.Vars[temVar.Name]; ok {
-					v, err := value.Value(ctx)
+					v, err := value.GetValue(ctx)
 					if err != nil {
 						// invalid
-						log.Error(err, "StringStore.Value")
+						log.Error(err, "StringStore.GetValue")
 						ansiblePlaybook.SetResourcePhase(onecloudv1.ResourceInvalid,
 							fmt.Sprintf("The value of var '%s' is valid: %s", temVar.Name, err.Error()),
 						)
@@ -232,10 +232,10 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		// build common vars
 		commonVars := make(map[string]interface{}, len(ansiblePlaybook.Spec.Vars))
 		for varName, sv := range ansiblePlaybook.Spec.Vars {
-			vv, err := sv.Value(ctx)
+			vv, err := sv.GetValue(ctx)
 			if err != nil {
 				// invalid
-				log.Error(err, "StringStore.Value")
+				log.Error(err, "StringStore.GetValue")
 				ansiblePlaybook.SetResourcePhase(onecloudv1.ResourceInvalid,
 					fmt.Sprintf("The value of var '%s' is valid: %s", varName, err.Error()),
 				)
