@@ -5,9 +5,11 @@ go 1.13
 require (
 	github.com/coredns/coredns v1.3.0 // indirect
 	github.com/go-logr/logr v0.1.0
+	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
+	k8s.io/apiextensions-apiserver v0.17.2
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v9.0.0+incompatible
 	k8s.io/kubernetes v1.16.0 // indirect
