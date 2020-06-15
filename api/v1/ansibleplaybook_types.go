@@ -38,7 +38,7 @@ type AnsiblePlaybookSpec struct {
 
 	// Vars describe the public value about Vars in AnsiblePlaybookTemplate.
 	// +optional
-	Vars map[string]IntOrStringStore `json:"vars,omitempty"`
+	Vars map[string]IntOrStringOrYamlStore `json:"vars,omitempty"`
 
 	// Nil or Non-positive number means unlimited.
 	// +optional
@@ -65,7 +65,7 @@ type AnsiblePlaybookHost struct {
 	// Vars describes the unique values ​​of the VirtualMachine
 	// corresponding to the variables in the AnsiblePlaybookTemplate.
 	// +optional
-	Vars map[string]IntOrStringStore `json:"vars,omitempty"`
+	Vars map[string]IntOrStringOrYamlStore `json:"vars,omitempty"`
 }
 
 type AnsiblePlaybookInfo struct {

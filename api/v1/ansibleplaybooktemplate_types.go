@@ -47,7 +47,7 @@ type AnsiblePlaybookTemplateVar struct {
 	// Default describe the default value of this variable.
 	// If it is empty, Required should be true.
 	// +optional
-	Default *IntOrString `json:"default,omitempty"`
+	Default *IntOrStringOrYaml `json:"default,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/go-yaml/yaml"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -54,7 +56,7 @@ func (sv String) Interface() interface{} {
 	return sv.String()
 }
 
-func (st *StringStore) GetValue(ctx context.Context) (IValue, error) {
+func (st StringStore) GetValue(ctx context.Context) (IValue, error) {
 	if len(st.Value) > 0 {
 		return String(st.Value), nil
 	}
@@ -84,24 +86,21 @@ type IntOrString struct {
 	intstr.IntOrString `json:",inline"`
 }
 
-func (isv *IntOrString) String() (string, bool) {
+func (isv IntOrString) String() (string, bool) {
 	if isv.Type == intstr.String {
 		return isv.StrVal, true
 	}
 	return "", false
 }
 
-func (isv *IntOrString) Int() (int32, bool) {
+func (isv IntOrString) Int() (int32, bool) {
 	if isv.Type == intstr.Int {
 		return isv.IntVal, true
 	}
 	return 0, false
 }
 
-func (isv *IntOrString) IsZero() bool {
-	if isv == nil {
-		return true
-	}
+func (isv IntOrString) IsZero() bool {
 	if s, ok := isv.String(); ok {
 		return s == ""
 	}
@@ -111,7 +110,7 @@ func (isv *IntOrString) IsZero() bool {
 	return true
 }
 
-func (isv *IntOrString) Interface() interface{} {
+func (isv IntOrString) Interface() interface{} {
 	if s, ok := isv.String(); ok {
 		return s
 	}
@@ -121,9 +120,9 @@ func (isv *IntOrString) Interface() interface{} {
 	return isv
 }
 
-func (ist *IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
+func (ist IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
 	if ist.Value != nil {
-		return ist.Value, nil
+		return *ist.Value, nil
 	}
 	in, err := ist.Reference.Value(ctx)
 	if err != nil {
@@ -147,5 +146,141 @@ func (ist *IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
 		ts := reflect.TypeOf(in).String()
 		return nil, fmt.Errorf("Type of ObjectFieldReference' Value in not 'string' but '%s'", ts)
 	}
-	return &IntOrString{is}, nil
+	return IntOrString{is}, nil
+}
+
+//type YamlStore struct {
+//	// +optional
+//	Value *Yaml `json:"value,omitempty"`
+//	// +optional
+//	Reference *ObjectFieldReference `json:"reference,omitempty"`
+//}
+//
+//func (ys YamlStore) GetValue(ctx context.Context) (IValue, error) {
+//	if ys.Value != nil {
+//		return ys.Value, nil
+//	}
+//	in, err := ys.Reference.Value(ctx)
+//	if err != nil {
+//		return nil, err
+//	}
+//	if in == nil {
+//		return nil, err
+//	}
+//
+//	raw, err := yaml.Marshal(in)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return Yaml{runtime.RawExtension{Raw: raw}}, nil
+//}
+//
+//type Yaml struct {
+//	runtime.RawExtension `json:",inline"`
+//}
+//
+//func (y Yaml) IsZero() bool {
+//	return len(y.Raw) == 0
+//}
+//
+//func (y Yaml) Interface() interface{} {
+//	return y
+//}
+//
+//func (y Yaml) MarshalYAML() (interface{}, error) {
+//	switch  {
+//	case y.Raw[0] == '"':
+//		var s string
+//		err := yaml.Unmarshal(y.Raw, &s)
+//		if err != nil {
+//			return nil, err
+//		}
+//		return s, nil
+//	case y.Raw[0] == '-':
+//		var s []map[string]interface{}
+//		err := yaml.Unmarshal(y.Raw, &s)
+//		if err != nil {
+//			return nil, err
+//		}
+//		return s, nil
+//	case !bytes.Contains(y.Raw, []byte{':'}):
+//		var s int
+//		err := yaml.Unmarshal(y.Raw, &s)
+//		if err != nil {
+//			return nil, err
+//		}
+//		return s, nil
+//	default:
+//		var s map[string]interface{}
+//		err := yaml.Unmarshal(y.Raw, &s)
+//		if err != nil {
+//			return nil, err
+//		}
+//		return s, nil
+//	}
+//}
+
+type IntOrStringOrYamlStore struct {
+	// +optional
+	Value *IntOrStringOrYaml `json:"value,omitempty"`
+	// +optional
+	Reference *ObjectFieldReference `json:"reference,omitempty"`
+}
+
+type IntOrStringOrYaml struct {
+	IntOrString `json:",inline"`
+}
+
+type Yaml []byte
+
+func (y *Yaml) MarshalYAML() (interface{}, error) {
+	s := *y
+	if s[0] == '-' {
+		var in []map[string]interface{}
+		err := yaml.Unmarshal(s, &in)
+		if err != nil {
+			return nil, err
+		}
+		return in, nil
+	}
+	var in map[string]interface{}
+	err := yaml.Unmarshal(s, &in)
+	if err != nil {
+		return string(s), nil
+	}
+	return in, nil
+}
+
+func (isy IntOrStringOrYaml) Interface() interface{} {
+	if s, ok := isy.String(); ok {
+		if !strings.Contains(s, ":") && !strings.Contains(s, "\n") {
+			return s
+		}
+		y := Yaml(s)
+		return &y
+	}
+	if i, ok := isy.Int(); ok {
+		return i
+	}
+	return isy
+}
+
+func (isys IntOrStringOrYamlStore) GetValue(ctx context.Context) (IValue, error) {
+	var iss IntOrStringStore
+	if isys.Value == nil {
+		iss = IntOrStringStore{
+			Reference: isys.Reference,
+		}
+	} else {
+		iss = IntOrStringStore{
+			Value:     &isys.Value.IntOrString,
+			Reference: isys.Reference,
+		}
+	}
+	value, err := iss.GetValue(ctx)
+	if err != nil {
+		return nil, err
+	}
+	is := value.(IntOrString)
+	return IntOrStringOrYaml{IntOrString: is}, nil
 }
