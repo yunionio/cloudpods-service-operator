@@ -43,6 +43,10 @@ spec:
                   vars:
                     additionalProperties:
                       properties:
+                        isYaml:
+                          description: IsYaml determines whether the string in IntOrStringStore
+                            is a yaml string
+                          type: boolean
                         reference:
                           properties:
                             fieldPath:
@@ -148,6 +152,10 @@ spec:
             vars:
               additionalProperties:
                 properties:
+                  isYaml:
+                    description: IsYaml determines whether the string in IntOrStringStore
+                      is a yaml string
+                    type: boolean
                   reference:
                     properties:
                       fieldPath:

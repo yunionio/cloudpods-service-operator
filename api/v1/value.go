@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-yaml/yaml"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -54,7 +55,7 @@ func (sv String) Interface() interface{} {
 	return sv.String()
 }
 
-func (st *StringStore) GetValue(ctx context.Context) (IValue, error) {
+func (st StringStore) GetValue(ctx context.Context) (IValue, error) {
 	if len(st.Value) > 0 {
 		return String(st.Value), nil
 	}
@@ -81,24 +82,21 @@ type IntOrString struct {
 	intstr.IntOrString `json:",inline"`
 }
 
-func (isv *IntOrString) String() (string, bool) {
+func (isv IntOrString) String() (string, bool) {
 	if isv.Type == intstr.String {
 		return isv.StrVal, true
 	}
 	return "", false
 }
 
-func (isv *IntOrString) Int() (int32, bool) {
+func (isv IntOrString) Int() (int32, bool) {
 	if isv.Type == intstr.Int {
 		return isv.IntVal, true
 	}
 	return 0, false
 }
 
-func (isv *IntOrString) IsZero() bool {
-	if isv == nil {
-		return true
-	}
+func (isv IntOrString) IsZero() bool {
 	if s, ok := isv.String(); ok {
 		return s == ""
 	}
@@ -108,7 +106,7 @@ func (isv *IntOrString) IsZero() bool {
 	return true
 }
 
-func (isv *IntOrString) Interface() interface{} {
+func (isv IntOrString) Interface() interface{} {
 	if s, ok := isv.String(); ok {
 		return s
 	}
@@ -118,9 +116,9 @@ func (isv *IntOrString) Interface() interface{} {
 	return isv
 }
 
-func (ist *IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
+func (ist IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
 	if ist.Value != nil {
-		return ist.Value, nil
+		return *ist.Value, nil
 	}
 	in, err := ist.Reference.Value(ctx)
 	if err != nil || in == nil {
@@ -141,5 +139,57 @@ func (ist *IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
 		ts := reflect.TypeOf(in).String()
 		return nil, fmt.Errorf("Type of ObjectFieldReference' Value in not 'string' but '%s'", ts)
 	}
-	return &IntOrString{is}, nil
+	return IntOrString{is}, nil
+}
+
+type IntOrStringOrYamlStore struct {
+	// IsYaml determines whether the string in IntOrStringStore is a yaml string
+	// +optional
+	IsYaml *bool `json:"isYaml,omitempty"`
+
+	IntOrStringStore `json:",inline"`
+}
+
+type Yaml []byte
+
+func (y Yaml) MarshalYAML() (interface{}, error) {
+	s := y
+	if s[0] == '-' {
+		var in []map[string]interface{}
+		err := yaml.Unmarshal(s, &in)
+		if err != nil {
+			return nil, err
+		}
+		return in, nil
+	}
+	var in map[string]interface{}
+	err := yaml.Unmarshal(s, &in)
+	if err != nil {
+		return string(s), nil
+	}
+	return in, nil
+}
+
+func (y Yaml) IsZero() bool {
+	return len(y) == 0
+}
+
+func (y Yaml) Interface() interface{} {
+	return y
+}
+
+func (isys IntOrStringOrYamlStore) GetValue(ctx context.Context) (IValue, error) {
+	value, err := isys.IntOrStringStore.GetValue(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if isys.IsYaml == nil && !*isys.IsYaml {
+		return value, nil
+	}
+	is := value.(IntOrString)
+	s, ok := is.String()
+	if !ok {
+		return nil, fmt.Errorf("Not support yaml string for integer")
+	}
+	return Yaml(s), nil
 }
