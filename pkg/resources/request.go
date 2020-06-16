@@ -69,10 +69,12 @@ func (ad *OperatorDesc) String() string {
 type Resource string
 
 const (
-	ResourceVM   Resource = "VM"
-	ResourceEIP  Resource = "EIP"
-	ResourceDisk Resource = "Disk"
-	ResourceAP   Resource = "AP"
+	ResourceVM       Resource = "VM"
+	ResourceEIP      Resource = "EIP"
+	ResourceDisk     Resource = "Disk"
+	ResourceAP       Resource = "AP"
+	ResourceEndpoint Resource = "Endpoint"
+	ResourceSevice   Resource = "Service"
 )
 
 // ResourceOperation describe the operation for onecloud resource like create, update, delete and so on.
@@ -166,6 +168,15 @@ func (r SRequest) DefaultParams(dict *jsonutils.JSONDict) SRequest {
 
 func (r SRequest) ResourceAction() string {
 	return fmt.Sprintf("%s%s", r.resource, r.operation)
+}
+
+func (r SRequest) GetId(ctx context.Context, name string) (string, error) {
+	resourceManager, ok := Modules[r.resource]
+	if !ok {
+		return "", fmt.Errorf("no such resource '%s' in Modules", r.resource)
+	}
+	session := auth.AdminSession(ctx)
+	return resourceManager.GetId(session, name, nil)
 }
 
 func (r SRequest) Apply(ctx context.Context, id string, params *jsonutils.JSONDict) (jsonutils.JSONObject, onecloudv1.ExternalInfoBase, error) {

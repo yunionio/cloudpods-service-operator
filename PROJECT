@@ -10,4 +10,7 @@ resources:
 - group: onecloud
   kind: AnsiblePlaybook
   version: v1
+- group: onecloud
+  kind: Endpoint
+  version: v1
 version: "2"

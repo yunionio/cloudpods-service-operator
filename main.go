@@ -88,6 +88,14 @@ func main() {
 
 	// init Reference Manager
 	onecloudv1.InitReferenceManager(mgr.GetClient(), mgr.GetScheme())
+	if err = (&controllers.EndpointReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Endpoint"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Endpoint")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

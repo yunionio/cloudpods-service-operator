@@ -1,0 +1,7 @@
+apiVersion: onecloud.yunion.io/v1
+kind: Endpoint
+metadata:
+  name: endpoint-sample
+spec:
+  # Add fields here
+  foo: bar
