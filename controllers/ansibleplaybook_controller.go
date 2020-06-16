@@ -37,12 +37,6 @@ import (
 	"yunion.io/x/onecloud-service-operator/pkg/resources"
 )
 
-var (
-	apPendingAfter = time.Duration(options.Options.AnsiblePlaybookConfig.IntervalPending) * time.Second
-	apWaitingAfter = time.Duration(options.Options.AnsiblePlaybookConfig.IntervalWaiting) * time.Second
-	dense          = options.Options.AnsiblePlaybookConfig.Dense
-)
-
 // AnsiblePlaybookReconciler reconciles a AnsiblePlaybook object
 type AnsiblePlaybookReconciler struct {
 	client.Client
@@ -71,6 +65,11 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	dealErr := func(err error) (ctrl.Result, error) {
 		return dealErr(ctx, log, r, &ansiblePlaybook, resources.ResourceAP, err)
 	}
+
+	var (
+		apPendingAfter = time.Duration(options.Options.AnsiblePlaybookConfig.IntervalPending) * time.Second
+		dense          = options.Options.AnsiblePlaybookConfig.Dense
+	)
 
 	myFinalizerName := "virtualmachine.finalizers.onecloud.yunion.io"
 	// add finalizer
@@ -377,6 +376,7 @@ func (r *AnsiblePlaybookReconciler) markWaiting(ctx context.Context, log logr.Lo
 	newStatus := ap.Status.DeepCopy()
 	newStatus.Phase = onecloudv1.ResourceWaiting
 	newStatus.Reason = msg
+	apWaitingAfter := time.Duration(options.Options.AnsiblePlaybookConfig.IntervalWaiting) * time.Second
 	if !r.requireUpdate(ap, newStatus) {
 		log.Info(fmt.Sprintf("no need to update, requeue after %d s", 15))
 		return ctrl.Result{Requeue: true, RequeueAfter: apWaitingAfter}, nil

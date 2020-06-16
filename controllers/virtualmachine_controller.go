@@ -32,10 +32,6 @@ import (
 	"yunion.io/x/onecloud-service-operator/pkg/util"
 )
 
-var (
-	vmPendingAfter = time.Duration(options.Options.VirtualMachineConfig.IntervalPending) * time.Minute
-)
-
 // VirtualMachineReconciler reconciles a VirtualMachine object
 type VirtualMachineReconciler struct {
 	client.Client
@@ -60,6 +56,10 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	dealErr := func(err error) (ctrl.Result, error) {
 		return dealErr(ctx, log, r, &virtualMachine, resources.ResourceVM, err)
 	}
+
+	var (
+		vmPendingAfter = time.Duration(options.Options.VirtualMachineConfig.IntervalPending) * time.Minute
+	)
 
 	myFinalizerName := "virtualmachine.finalizers.onecloud.yunion.io"
 	// add finalizer
@@ -160,7 +160,7 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 
 	// Pending
 	if virtualMachine.Status.Phase == onecloudv1.ResourcePending {
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: vmPendingAfter * time.Second}, nil
 	}
 
 	// Unkown
