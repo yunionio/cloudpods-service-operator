@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/mcuadros/go-lookup"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -80,6 +81,9 @@ func (fr *ObjectFieldReference) Value(ctx context.Context) (interface{}, error) 
 	}
 	err = clienti.Get(ctx, fr.NamespacedName(), obj)
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "client.Get")
 	}
 	value, err := lookup.LookupString(obj, fr.FieldPath)

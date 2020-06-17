@@ -59,11 +59,8 @@ func (st *StringStore) GetValue(ctx context.Context) (IValue, error) {
 		return String(st.Value), nil
 	}
 	in, err := st.Reference.Value(ctx)
-	if err != nil {
+	if err != nil || in == nil{
 		return nil, err
-	}
-	if in == nil {
-		return nil, nil
 	}
 	s, ok := in.(string)
 	if !ok {
@@ -126,10 +123,7 @@ func (ist *IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
 		return ist.Value, nil
 	}
 	in, err := ist.Reference.Value(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if in == nil {
+	if err != nil || in == nil {
 		return nil, err
 	}
 
