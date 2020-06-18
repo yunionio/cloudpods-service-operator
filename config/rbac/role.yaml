@@ -41,6 +41,26 @@ rules:
 - apiGroups:
   - onecloud.yunion.io
   resources:
+  - endpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - onecloud.yunion.io
+  resources:
+  - endpoints/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - onecloud.yunion.io
+  resources:
   - virtualmachines
   verbs:
   - create

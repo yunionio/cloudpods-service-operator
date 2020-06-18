@@ -212,7 +212,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		}
 
 		// all other resources ready, create ansible playbook
-		return r.Create(ctx, remoteAp, resources.APCreateParams{hosts, &playbookTemplate, commonVars})
+		return r.Create(ctx, remoteAp, resources.APCreateParams{hosts, &playbookTemplate, commonVars}, true)
 	}
 
 	var recon func(ctx context.Context) (*onecloudv1.AnsiblePlaybookStatus, error)

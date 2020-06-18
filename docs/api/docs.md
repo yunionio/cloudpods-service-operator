@@ -97,8 +97,8 @@ AnsiblePlaybookTemplateSpec
 <td>
 <code>vars</code></br>
 <em>
-<a href="#onecloud.yunion.io/v1.IntOrStringStore">
-map[string]../api/v1.IntOrStringStore
+<a href="#onecloud.yunion.io/v1.IntOrStringOrYamlStore">
+map[string]../api/v1.IntOrStringOrYamlStore
 </a>
 </em>
 </td>
@@ -109,14 +109,18 @@ map[string]../api/v1.IntOrStringStore
 </tr>
 <tr>
 <td>
-<code>maxRetryTimes</code></br>
+<code>ResourceSpecBase</code></br>
 <em>
-int32
+<a href="#onecloud.yunion.io/v1.ResourceSpecBase">
+ResourceSpecBase
+</a>
 </em>
 </td>
 <td>
-<em>(Optional)</em>
-<p>Nil or Non-positive number means unlimited.</p>
+<p>
+(Members of <code>ResourceSpecBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
 </td>
 </tr>
 </table>
@@ -170,8 +174,8 @@ ObjectReference
 <td>
 <code>vars</code></br>
 <em>
-<a href="#onecloud.yunion.io/v1.IntOrStringStore">
-map[string]../api/v1.IntOrStringStore
+<a href="#onecloud.yunion.io/v1.IntOrStringOrYamlStore">
+map[string]../api/v1.IntOrStringOrYamlStore
 </a>
 </em>
 </td>
@@ -291,8 +295,8 @@ AnsiblePlaybookTemplateSpec
 <td>
 <code>vars</code></br>
 <em>
-<a href="#onecloud.yunion.io/v1.IntOrStringStore">
-map[string]../api/v1.IntOrStringStore
+<a href="#onecloud.yunion.io/v1.IntOrStringOrYamlStore">
+map[string]../api/v1.IntOrStringOrYamlStore
 </a>
 </em>
 </td>
@@ -303,14 +307,18 @@ map[string]../api/v1.IntOrStringStore
 </tr>
 <tr>
 <td>
-<code>maxRetryTimes</code></br>
+<code>ResourceSpecBase</code></br>
 <em>
-int32
+<a href="#onecloud.yunion.io/v1.ResourceSpecBase">
+ResourceSpecBase
+</a>
 </em>
 </td>
 <td>
-<em>(Optional)</em>
-<p>Nil or Non-positive number means unlimited.</p>
+<p>
+(Members of <code>ResourceSpecBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
 </td>
 </tr>
 </tbody>
@@ -334,28 +342,19 @@ int32
 <tbody>
 <tr>
 <td>
-<code>phase</code></br>
+<code>ResourceStatusBase</code></br>
 <em>
-<a href="#onecloud.yunion.io/v1.ResourcePhase">
-ResourcePhase
+<a href="#onecloud.yunion.io/v1.ResourceStatusBase">
+ResourceStatusBase
 </a>
 </em>
 </td>
 <td>
-<em>(Optional)</em>
+<p>
+(Members of <code>ResourceStatusBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
 <p>Important: Run &ldquo;make&rdquo; to regenerate code after modifying this file</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>reason</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>A human readable message indicating details about why vm is in this phase.</p>
 </td>
 </tr>
 <tr>
@@ -369,17 +368,6 @@ AnsiblePlaybookInfo
 </td>
 <td>
 <em>(Optional)</em>
-</td>
-</tr>
-<tr>
-<td>
-<code>tryTimes</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-<em>(Required)</em>
 </td>
 </tr>
 </tbody>
@@ -691,11 +679,289 @@ string
 </tr>
 </tbody>
 </table>
+<h3 id="onecloud.yunion.io/v1.Endpoint">Endpoint
+</h3>
+<p>
+<p>Endpoint is the Schema for the endpoints API</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>metadata</code></br>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta">
+Kubernetes meta/v1.ObjectMeta
+</a>
+</em>
+</td>
+<td>
+<em>(Required)</em>
+Refer to the Kubernetes API documentation for the fields of the
+<code>metadata</code> field.
+</td>
+</tr>
+<tr>
+<td>
+<code>spec</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.EndpointSpec">
+EndpointSpec
+</a>
+</em>
+</td>
+<td>
+<em>(Required)</em>
+<br/>
+<br/>
+<table>
+<tr>
+<td>
+<code>url</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Required)</em>
+<p>Url of this Endpoint</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>regionId</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Required)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>disabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>serviceCertificate</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Service certificate id or name</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ResourceSpecBase</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ResourceSpecBase">
+ResourceSpecBase
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>ResourceSpecBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<code>status</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.EndpointStatus">
+EndpointStatus
+</a>
+</em>
+</td>
+<td>
+<em>(Required)</em>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onecloud.yunion.io/v1.EndpointSpec">EndpointSpec
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.Endpoint">Endpoint</a>)
+</p>
+<p>
+<p>EndpointSpec defines the desired state of Endpoint</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>url</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Required)</em>
+<p>Url of this Endpoint</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>regionId</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Required)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>disabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>serviceCertificate</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Service certificate id or name</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ResourceSpecBase</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ResourceSpecBase">
+ResourceSpecBase
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>ResourceSpecBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onecloud.yunion.io/v1.EndpointStatus">EndpointStatus
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.Endpoint">Endpoint</a>)
+</p>
+<p>
+<p>EndpointStatus defines the observed state of Endpoint</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>ResourceStatusBase</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ResourceStatusBase">
+ResourceStatusBase
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>ResourceStatusBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>externalInfo</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ExternalInfoBase">
+ExternalInfoBase
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="onecloud.yunion.io/v1.ExternalInfoBase">ExternalInfoBase
 </h3>
 <p>
 (<em>Appears on:</em>
 <a href="#onecloud.yunion.io/v1.AnsiblePlaybookInfo">AnsiblePlaybookInfo</a>, 
+<a href="#onecloud.yunion.io/v1.EndpointStatus">EndpointStatus</a>, 
 <a href="#onecloud.yunion.io/v1.VMInfo">VMInfo</a>)
 </p>
 <p>
@@ -749,6 +1015,14 @@ string
 </h3>
 <p>
 </p>
+<h3 id="onecloud.yunion.io/v1.IResourceSpec">IResourceSpec
+</h3>
+<p>
+</p>
+<h3 id="onecloud.yunion.io/v1.IResourceStatus">IResourceStatus
+</h3>
+<p>
+</p>
 <h3 id="onecloud.yunion.io/v1.IStore">IStore
 </h3>
 <p>
@@ -792,12 +1066,58 @@ k8s.io/apimachinery/pkg/util/intstr.IntOrString
 </tr>
 </tbody>
 </table>
-<h3 id="onecloud.yunion.io/v1.IntOrStringStore">IntOrStringStore
+<h3 id="onecloud.yunion.io/v1.IntOrStringOrYamlStore">IntOrStringOrYamlStore
 </h3>
 <p>
 (<em>Appears on:</em>
 <a href="#onecloud.yunion.io/v1.AnsiblePlaybookHost">AnsiblePlaybookHost</a>, 
 <a href="#onecloud.yunion.io/v1.AnsiblePlaybookSpec">AnsiblePlaybookSpec</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>isYaml</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>IsYaml determines whether the string in IntOrStringStore is a yaml string</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>IntOrStringStore</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.IntOrStringStore">
+IntOrStringStore
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>IntOrStringStore</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onecloud.yunion.io/v1.IntOrStringStore">IntOrStringStore
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.IntOrStringOrYamlStore">IntOrStringOrYamlStore</a>)
 </p>
 <p>
 </p>
@@ -1089,29 +1409,106 @@ bool
 <em>(Optional)</em>
 </td>
 </tr>
-<tr>
-<td>
-<code>maxTimes</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-<em>(Required)</em>
-</td>
-</tr>
 </tbody>
 </table>
 <h3 id="onecloud.yunion.io/v1.ResourcePhase">ResourcePhase
 (<code>string</code> alias)</p></h3>
 <p>
 (<em>Appears on:</em>
-<a href="#onecloud.yunion.io/v1.AnsiblePlaybookStatus">AnsiblePlaybookStatus</a>, 
-<a href="#onecloud.yunion.io/v1.VirtualMachineStatus">VirtualMachineStatus</a>)
+<a href="#onecloud.yunion.io/v1.ResourceStatusBase">ResourceStatusBase</a>)
 </p>
 <p>
 <p>ResourcePhase is a label for the condition of a resource at the current time</p>
 </p>
+<h3 id="onecloud.yunion.io/v1.ResourceSpecBase">ResourceSpecBase
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.AnsiblePlaybookSpec">AnsiblePlaybookSpec</a>, 
+<a href="#onecloud.yunion.io/v1.EndpointSpec">EndpointSpec</a>, 
+<a href="#onecloud.yunion.io/v1.VirtualMachineSpec">VirtualMachineSpec</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>maxRetryTimes</code></br>
+<em>
+int32
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Nil or Non-positive number means unlimited.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onecloud.yunion.io/v1.ResourceStatusBase">ResourceStatusBase
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.AnsiblePlaybookStatus">AnsiblePlaybookStatus</a>, 
+<a href="#onecloud.yunion.io/v1.EndpointStatus">EndpointStatus</a>, 
+<a href="#onecloud.yunion.io/v1.VirtualMachineStatus">VirtualMachineStatus</a>)
+</p>
+<p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>phase</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ResourcePhase">
+ResourcePhase
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>reason</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>A human readable message indicating details about why resource is in this phase.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>tryTimes</code></br>
+<em>
+int32
+</em>
+</td>
+<td>
+<em>(Required)</em>
+<p>TryTimes record the continuous try times.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="onecloud.yunion.io/v1.StorageMedium">StorageMedium
 (<code>string</code> alias)</p></h3>
 <p>
@@ -1127,6 +1524,10 @@ int32
 </p>
 <h3 id="onecloud.yunion.io/v1.StringStore">StringStore
 </h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.URL">URL</a>)
+</p>
 <p>
 </p>
 <table>
@@ -1155,6 +1556,71 @@ string
 <a href="#onecloud.yunion.io/v1.ObjectFieldReference">
 ObjectFieldReference
 </a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onecloud.yunion.io/v1.URL">URL
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#onecloud.yunion.io/v1.EndpointSpec">EndpointSpec</a>)
+</p>
+<p>
+<p>URL is used to construct url string &lsquo;Protocol://Host:Port/Prefix&rsquo;</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>protocol</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>host</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.StringStore">
+StringStore
+</a>
+</em>
+</td>
+<td>
+<em>(Required)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>port</code></br>
+<em>
+int32
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+</td>
+</tr>
+<tr>
+<td>
+<code>prefix</code></br>
+<em>
+string
 </em>
 </td>
 <td>
@@ -1775,6 +2241,22 @@ RecreatePolicy
 <em>(Optional)</em>
 </td>
 </tr>
+<tr>
+<td>
+<code>ResourceSpecBase</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ResourceSpecBase">
+ResourceSpecBase
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>ResourceSpecBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
+</td>
+</tr>
 </table>
 </td>
 </tr>
@@ -2071,6 +2553,22 @@ RecreatePolicy
 <em>(Optional)</em>
 </td>
 </tr>
+<tr>
+<td>
+<code>ResourceSpecBase</code></br>
+<em>
+<a href="#onecloud.yunion.io/v1.ResourceSpecBase">
+ResourceSpecBase
+</a>
+</em>
+</td>
+<td>
+<p>
+(Members of <code>ResourceSpecBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="onecloud.yunion.io/v1.VirtualMachineStatus">VirtualMachineStatus
@@ -2092,29 +2590,20 @@ RecreatePolicy
 <tbody>
 <tr>
 <td>
-<code>phase</code></br>
+<code>ResourceStatusBase</code></br>
 <em>
-<a href="#onecloud.yunion.io/v1.ResourcePhase">
-ResourcePhase
+<a href="#onecloud.yunion.io/v1.ResourceStatusBase">
+ResourceStatusBase
 </a>
 </em>
 </td>
 <td>
-<em>(Optional)</em>
+<p>
+(Members of <code>ResourceStatusBase</code> are embedded into this type.)
+</p>
+<em>(Required)</em>
 <p>INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 Important: Run &ldquo;make&rdquo; to regenerate code after modifying this file</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>reason</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>A human readable message indicating details about why vm is in this phase.</p>
 </td>
 </tr>
 <tr>
@@ -2130,22 +2619,14 @@ VMInfo
 <em>(Optional)</em>
 </td>
 </tr>
-<tr>
-<td>
-<code>createTimes</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-<em>(Required)</em>
-<p>CreateTimes record the continuous creation times.</p>
-</td>
-</tr>
 </tbody>
 </table>
+<h3 id="onecloud.yunion.io/v1.Yaml">Yaml
+(<code>[]byte</code> alias)</p></h3>
+<p>
+</p>
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>655cf96</code>.
+on git commit <code>2e2a6f4</code>.
 </em></p>

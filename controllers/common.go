@@ -114,7 +114,7 @@ func (r *ReconcilerBase) UseFinallizer(ctx context.Context, ocResource resources
 	return
 }
 
-func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCResource, params interface{}) (ctrl.Result, error) {
+func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCResource, params interface{}, needPend bool) (ctrl.Result, error) {
 	resource := ocResource.GetIResource()
 	maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
 	rs := resource.GetResourceStatus()
@@ -127,7 +127,11 @@ func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCReso
 		return r.dealErr(ctx, ocResource, err)
 	}
 	rs.SetBaseExternalInfo(extInfo)
-	rs.SetPhase(onecloudv1.ResourcePending, "")
+	if needPend {
+		rs.SetPhase(onecloudv1.ResourcePending, "")
+	} else {
+		rs.SetPhase(onecloudv1.ResourceReady, "")
+	}
 	rs.SetTryTimes(retryTimes + 1)
 	return ctrl.Result{}, r.Status().Update(ctx, resource)
 }

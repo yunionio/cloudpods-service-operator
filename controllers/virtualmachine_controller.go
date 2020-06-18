@@ -70,7 +70,7 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	// and we need to create a new one
 	if len(virtualMachine.Status.ExternalInfo.Id) == 0 {
 		var in interface{}
-		return r.Create(ctx, remoteVm, in)
+		return r.Create(ctx, remoteVm, in, true)
 	}
 
 	// VirutalMachine.RemoteStatus.VmId is not empty, sync status
