@@ -20,11 +20,8 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"yunion.io/x/pkg/utils"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud-service-operator/pkg/options"
@@ -34,9 +31,7 @@ import (
 
 // VirtualMachineReconciler reconciles a VirtualMachine object
 type VirtualMachineReconciler struct {
-	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	ReconcilerBase
 }
 
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=virtualmachines,verbs=get;list;watch;create;update;patch;delete
@@ -44,50 +39,26 @@ type VirtualMachineReconciler struct {
 
 func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("virtualmachine", req.NamespacedName)
 
 	var virtualMachine onecloudv1.VirtualMachine
 	if err := r.Get(ctx, req.NamespacedName, &virtualMachine); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	log := r.GetLog(&virtualMachine)
 	remoteVm := resources.NewVirtualMachine(&virtualMachine)
 
 	dealErr := func(err error) (ctrl.Result, error) {
-		return dealErr(ctx, log, r, &virtualMachine, resources.ResourceVM, err)
+		return r.dealErr(ctx, remoteVm, err)
 	}
 
 	var (
 		vmPendingAfter = time.Duration(options.Options.VirtualMachineConfig.IntervalPending) * time.Minute
 	)
 
-	myFinalizerName := "virtualmachine.finalizers.onecloud.yunion.io"
-	// add finalizer
-	if virtualMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		if !utils.IsInStringArray(myFinalizerName, virtualMachine.ObjectMeta.Finalizers) {
-			virtualMachine.ObjectMeta.Finalizers = append(virtualMachine.ObjectMeta.Finalizers, myFinalizerName)
-			if err := r.Update(ctx, &virtualMachine); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, nil
-		}
-	} else {
-		if utils.IsInStringArray(myFinalizerName, virtualMachine.ObjectMeta.Finalizers) {
-			if len(virtualMachine.Status.ExternalInfo.Id) == 0 {
-				virtualMachine.ObjectMeta.Finalizers = removeString(virtualMachine.ObjectMeta.Finalizers,
-					myFinalizerName)
-				if err := r.Update(ctx, &virtualMachine); err != nil {
-					return ctrl.Result{}, err
-				}
-				return ctrl.Result{}, nil
-			}
-			ret, err := r.realDelete(ctx, remoteVm)
-			if err != nil {
-				return dealErr(err)
-			}
-			return ret, nil
-		}
-		return ctrl.Result{}, nil
+	has, ret, err := r.UseFinallizer(ctx, remoteVm)
+	if !has {
+		return ret, err
 	}
 
 	// Invalid resource
@@ -98,21 +69,14 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	// That virtualMachine.RemoteStatus.VmId field is empty, indicating that there is no corresponding VM,
 	// and we need to create a new one
 	if len(virtualMachine.Status.ExternalInfo.Id) == 0 {
-		err := r.create(ctx, remoteVm)
-		if err != nil {
-			return dealErr(err)
-		}
-		return ctrl.Result{}, nil
+		var in interface{}
+		return r.Create(ctx, remoteVm, in)
 	}
 
 	// VirutalMachine.RemoteStatus.VmId is not empty, sync status
-	vmStatus, err := remoteVm.GetStatus(ctx)
-	if err != nil {
-		return dealErr(err)
-	}
-	if r.requireUpdate(&virtualMachine, vmStatus) {
-		virtualMachine.Status = *vmStatus
-		return ctrl.Result{}, r.Status().Update(ctx, &virtualMachine)
+	update, ret, err := r.GetStatus(ctx, remoteVm)
+	if update {
+		return ret, err
 	}
 
 	// Running
@@ -152,10 +116,7 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	if virtualMachine.Status.Phase == onecloudv1.ResourceFailed {
 		// before delete, log the status of vm
 		log.V(-1).Info(fmt.Sprintf("vm's externalInfoBase: %#v", virtualMachine.Status.ExternalInfo.ExternalInfoBase))
-		if err := r.delete(ctx, remoteVm); err != nil {
-			return dealErr(err)
-		}
-		return ctrl.Result{}, nil
+		return r.Delete(ctx, remoteVm)
 	}
 
 	// Pending
@@ -168,32 +129,6 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		return ctrl.Result{Requeue: true, RequeueAfter: 2 * time.Second}, nil
 	}
 
-	return ctrl.Result{}, nil
-}
-
-func (r *VirtualMachineReconciler) realDelete(ctx context.Context, remoteVm resources.VirtualMachine) (ctrl.Result, error) {
-	// sync status first
-	vmStatus, err := remoteVm.GetStatus(ctx)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	vm := remoteVm.VirtualMachine
-	if r.requireUpdate(vm, vmStatus) {
-		vm.Status = *vmStatus
-		return ctrl.Result{}, r.Status().Update(ctx, vm)
-	}
-	// Pending
-	if vm.Status.Phase == onecloudv1.ResourcePending {
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, nil
-	}
-	// Unkown
-	if vm.Status.Phase == onecloudv1.ResourceUnkown {
-		return ctrl.Result{Requeue: true, RequeueAfter: 2 * time.Second}, nil
-	}
-	// Delete VM
-	if err := r.delete(ctx, remoteVm); err != nil {
-		return ctrl.Result{}, err
-	}
 	return ctrl.Result{}, nil
 }
 
@@ -233,7 +168,7 @@ func (r *VirtualMachineReconciler) requireUpdate(vm *onecloudv1.VirtualMachine,
 	if newStatus == nil {
 		return false
 	}
-	if vm.Status.Phase != newStatus.Phase || vm.Status.CreateTimes != newStatus.CreateTimes {
+	if vm.Status.Phase != newStatus.Phase || vm.Status.TryTimes != newStatus.TryTimes {
 		return true
 	}
 	if vm.Status.ExternalInfo.Eip != newStatus.ExternalInfo.Eip || !util.EqualStringSlices(vm.Status.ExternalInfo.Ips,
@@ -241,47 +176,6 @@ func (r *VirtualMachineReconciler) requireUpdate(vm *onecloudv1.VirtualMachine,
 		return true
 	}
 	return false
-}
-
-func (r *VirtualMachineReconciler) create(ctx context.Context, remoteVm resources.VirtualMachine) error {
-	// check if recreate times has reached the max limit
-	vm := remoteVm.VirtualMachine
-	recreateMaxTimes := r.maxRecreateTimes(remoteVm)
-	if vm.Status.CreateTimes-1 == recreateMaxTimes {
-		vm.Status.Phase = onecloudv1.ResourceInvalid
-		vm.Status.Reason = fmt.Sprintf("The number of consecutive retry creation failures exceeds the maximum %d",
-			recreateMaxTimes)
-		return r.Status().Update(ctx, vm)
-	}
-	var in interface{}
-	extInfo, err := remoteVm.Create(ctx, in)
-	if err != nil {
-		return err
-	}
-	vm.Status.ExternalInfo.ExternalInfoBase = extInfo
-	vm.Status.Phase = onecloudv1.ResourcePending
-	vm.Status.CreateTimes += 1
-	return r.Status().Update(ctx, vm)
-}
-
-func (r *VirtualMachineReconciler) delete(ctx context.Context, remoteVm resources.VirtualMachine) error {
-	extInfo, err := remoteVm.Delete(ctx)
-	if err != nil {
-		return err
-	}
-	vm := remoteVm.VirtualMachine
-	vm.Status.Phase = onecloudv1.ResourcePending
-	vm.Status.ExternalInfo.ExternalInfoBase = extInfo
-
-	return r.Status().Update(ctx, vm)
-}
-
-func (r *VirtualMachineReconciler) maxRecreateTimes(remoteVm resources.VirtualMachine) int32 {
-	vm := remoteVm.VirtualMachine
-	if vm.Spec.RecreatePolicy != nil {
-		return vm.Spec.RecreatePolicy.MaxTimes
-	}
-	return remoteVm.DefaultRecreatePolicy().MaxTimes
 }
 
 func (r *VirtualMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {

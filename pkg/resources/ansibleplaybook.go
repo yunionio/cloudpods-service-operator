@@ -42,6 +42,14 @@ func NewAnisblePlaybook(ap *onecloudv1.AnsiblePlaybook) AnsiblePlaybook {
 	return AnsiblePlaybook{ap}
 }
 
+func (ap AnsiblePlaybook) GetIResource() onecloudv1.IResource {
+	return ap.AnsiblePlaybook
+}
+
+func (ap AnsiblePlaybook) GetResourceName() Resource {
+	return ResourceAP
+}
+
 type APCreateParams struct {
 	Hosts      []AnsiblePlaybookHost
 	Apt        *onecloudv1.AnsiblePlaybookTemplate
@@ -80,22 +88,22 @@ func (an AnsiblePlaybook) create(ctx context.Context, hosts []AnsiblePlaybookHos
 	return extInfo, err
 }
 
-func (an AnsiblePlaybook) Delete(ctx context.Context) (bool, onecloudv1.ExternalInfoBase, error) {
+func (an AnsiblePlaybook) Delete(ctx context.Context) (onecloudv1.ExternalInfoBase, error) {
 	ap := an.AnsiblePlaybook
 	_, extInfo, err := RequestAP.Operation(OperGet).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
 	if err != nil {
-		return false, extInfo, err
+		return extInfo, err
 	}
 	if extInfo.Status == anapi.AnsiblePlaybookStatusRunning {
 		// cancel first
 		_, extInfo, err := RequestAP.Operation(OperStop).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
-		return false, extInfo, err
+		return extInfo, err
 	}
 	_, extInfo, err = RequestAP.Operation(OperDelete).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
-	return true, extInfo, err
+	return extInfo, err
 }
 
-func (an AnsiblePlaybook) GetStatus(ctx context.Context) (*onecloudv1.AnsiblePlaybookStatus, error) {
+func (an AnsiblePlaybook) GetStatus(ctx context.Context) (onecloudv1.IResourceStatus, error) {
 	ap := an.AnsiblePlaybook
 	_, extInfo, err := RequestAP.Operation(OperGetStatus).Apply(ctx, ap.Status.ExternalInfo.Id, nil)
 	if err != nil {

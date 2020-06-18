@@ -60,7 +60,7 @@ func (st StringStore) GetValue(ctx context.Context) (IValue, error) {
 		return String(st.Value), nil
 	}
 	in, err := st.Reference.Value(ctx)
-	if err != nil || in == nil{
+	if err != nil || in == nil {
 		return nil, err
 	}
 	s, ok := in.(string)

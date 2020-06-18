@@ -52,6 +52,10 @@ spec:
               type: string
             keyPairId:
               type: string
+            maxRetryTimes:
+              description: Nil or Non-positive number means unlimited.
+              format: int32
+              type: integer
             name:
               description: Name
               type: string
@@ -93,13 +97,8 @@ spec:
                   items:
                     type: string
                   type: array
-                maxTimes:
-                  format: int32
-                  type: integer
                 never:
                   type: boolean
-              required:
-              - maxTimes
               type: object
             resetPassword:
               type: boolean
@@ -254,10 +253,6 @@ spec:
         status:
           description: VirtualMachineStatus defines the observed state of VirtualMachine
           properties:
-            createTimes:
-              description: CreateTimes record the continuous creation times.
-              format: int32
-              type: integer
             externalInfo:
               properties:
                 action:
@@ -275,16 +270,19 @@ spec:
                   type: string
               type: object
             phase:
-              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                of cluster Important: Run "make" to regenerate code after modifying
-                this file'
+              description: ResourcePhase is a label for the condition of a resource
+                at the current time
               type: string
             reason:
-              description: A human readable message indicating details about why vm
+              description: A human readable message indicating details about why resource
                 is in this phase.
               type: string
+            tryTimes:
+              description: TryTimes record the continuous try times.
+              format: int32
+              type: integer
           required:
-          - createTimes
+          - tryTimes
           type: object
       type: object
   version: v1

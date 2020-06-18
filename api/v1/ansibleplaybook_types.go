@@ -40,24 +40,15 @@ type AnsiblePlaybookSpec struct {
 	// +optional
 	Vars map[string]IntOrStringOrYamlStore `json:"vars,omitempty"`
 
-	// Nil or Non-positive number means unlimited.
-	// +optional
-	MaxRetryTime *int32 `json:"maxRetryTimes,omitempty"`
+	ResourceSpecBase `json:",inline"`
 }
 
 // AnsiblePlaybookStatus defines the observed state of AnsiblePlaybook
 type AnsiblePlaybookStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	// +optional
-	Phase ResourcePhase `json:"phase,omitempty"`
-	// A human readable message indicating details about why vm is in this phase.
-	// +optional
-	Reason string `json:"reason,omitempty"`
-
+	ResourceStatusBase `json:",inline"`
 	// +optional
 	ExternalInfo AnsiblePlaybookInfo `json:"externalInfo,omitempty"`
-
-	TryTimes int32 `json:"tryTimes"`
 }
 
 type AnsiblePlaybookHost struct {

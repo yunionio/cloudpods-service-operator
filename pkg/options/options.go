@@ -15,6 +15,8 @@ type OperatroOptions struct {
 	EnableLeaderElection bool `help:"Enable leader election for controller manager. Enable intensive information collection during the reconcile process." default:"false"`
 	EnableWebhooks       bool `help:"Enable webhooks for controller manager." default:"false"`
 	SyncPeriod           int  `help:"The interval between two adjacent local cache refreshes. unit:m" default:"10"`
+	IntervalPending      int  `json:"interval_pending" help:"Reconcile interval when the state of the resource is pending." default:"5"`
+	IntervalWaiting      int  `json:"interval_waiting" help:"Reconcile interval when the state of the resource is waiting." default:"15"`
 
 	AdminAuthConfig
 	AnsiblePlaybookConfig
