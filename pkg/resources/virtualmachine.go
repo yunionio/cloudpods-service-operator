@@ -37,6 +37,15 @@ type VirtualMachine struct {
 func NewVirtualMachine(vm *onecloudv1.VirtualMachine) VirtualMachine {
 	return VirtualMachine{vm}
 }
+
+func (vi VirtualMachine) GetIResource() onecloudv1.IResource {
+	return vi.VirtualMachine
+}
+
+func (vi VirtualMachine) GetResourceName() Resource {
+	return ResourceVM
+}
+
 func (vi VirtualMachine) Create(ctx context.Context, _ interface{}) (onecloudv1.ExternalInfoBase, error) {
 	vm := vi.VirtualMachine
 	serverCreateInput := ConvertVM(vm.Spec)
@@ -62,14 +71,15 @@ func (vi VirtualMachine) Delete(ctx context.Context) (onecloudv1.ExternalInfoBas
 	return s, e
 }
 
-func (vi VirtualMachine) GetStatus(ctx context.Context) (vmStatus *onecloudv1.VirtualMachineStatus, err error) {
+func (vi VirtualMachine) GetStatus(ctx context.Context) (rs onecloudv1.IResourceStatus, err error) {
 	vm := vi.VirtualMachine
 	lastInfo := vm.Status.ExternalInfo.ExternalInfoBase
 	_, extInfo, err := RequestVM.Operation(OperGetStatus).Apply(ctx, vm.Status.ExternalInfo.Id, nil)
 	if err != nil {
 		return nil, err
 	}
-	vmStatus = vm.Status.DeepCopy()
+	vmStatus := vm.Status.DeepCopy()
+	rs = vmStatus
 	var (
 		phase  onecloudv1.ResourcePhase
 		reason string
@@ -449,7 +459,6 @@ var (
 		Never:       &True,
 		MatchStatus: []string{},
 		Allways:     nil,
-		MaxTimes:    5,
 	}
 	vmCreatingStatus = append(comapi.VM_CREATING_STATUS, comapi.VM_INIT, comapi.VM_SCHEDULE)
 	vmStopStatus     = []string{

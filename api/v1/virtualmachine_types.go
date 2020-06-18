@@ -55,7 +55,8 @@ type VirtualMachineSpec struct {
 	AutoRenew *bool `json:"autoRenew,omitempty"`
 
 	// +optional
-	RecreatePolicy *RecreatePolicy `json:"recreatePolicy,omitempty"`
+	RecreatePolicy   *RecreatePolicy `json:"recreatePolicy,omitempty"`
+	ResourceSpecBase `json:",inline"`
 }
 
 // RecreatePolicy describe that when the virtual machine is abnormal, how to deal with it,
@@ -65,8 +66,7 @@ type RecreatePolicy struct {
 	// +optional
 	Never *bool `json:"never,omitempty"`
 	// +optional
-	Allways  *bool `json:"allways,omitempty"`
-	MaxTimes int32 `json:"maxTimes"`
+	Allways *bool `json:"allways,omitempty"`
 }
 
 type VMNewEipSpec struct {
@@ -211,15 +211,9 @@ const (
 type VirtualMachineStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// +optional
-	Phase ResourcePhase `json:"phase,omitempty"`
-	// A human readable message indicating details about why vm is in this phase.
-	// +optional
-	Reason string `json:"reason,omitempty"`
+	ResourceStatusBase `json:",inline"`
 	// +optional
 	ExternalInfo VMInfo `json:"externalInfo,omitempty"`
-	// CreateTimes record the continuous creation times.
-	CreateTimes int32 `json:"createTimes"`
 }
 
 type VMInfo struct {

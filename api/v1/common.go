@@ -15,6 +15,7 @@
 package v1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -86,24 +87,112 @@ type LocalObjectReference struct {
 // +kubebuilder:object:generate=false
 type IResource interface {
 	runtime.Object
-	SetResourcePhase(phase ResourcePhase, reason string)
-	SetExternalId(id string)
+	metav1.Object
+	GetResourceStatus() IResourceStatus
+	GetResourceSpec() IResourceSpec
+	SetResourceStatus(is IResourceStatus)
 }
 
-func (vm *VirtualMachine) SetResourcePhase(phase ResourcePhase, reason string) {
-	vm.Status.Phase = phase
-	vm.Status.Reason = reason
+// +kubebuilder:object:generate=false
+type IResourceStatus interface {
+	DeepCopy2() IResourceStatus
+	GetPhase() ResourcePhase
+	SetPhase(phase ResourcePhase, reason string)
+	GetTryTimes() int32
+	SetTryTimes(i int32)
+	GetBaseExternalInfo() ExternalInfoBase
+	SetBaseExternalInfo(info ExternalInfoBase)
 }
 
-func (vm *VirtualMachine) SetExternalId(id string) {
-	vm.Status.ExternalInfo.Id = id
+// +kubebuilder:object:generate=false
+type IResourceSpec interface {
+	GetMaxRetryTimes() int32
 }
 
-func (ap *AnsiblePlaybook) SetResourcePhase(phase ResourcePhase, reason string) {
-	ap.Status.Phase = phase
-	ap.Status.Reason = reason
+type ResourceSpecBase struct {
+	// Nil or Non-positive number means unlimited.
+	// +optional
+	MaxRetryTimes *int32 `json:"maxRetryTimes,omitempty"`
 }
 
-func (ap *AnsiblePlaybook) SetExternalId(id string) {
-	ap.Status.ExternalInfo.Id = id
+func (rs *ResourceSpecBase) GetMaxRetryTimes() int32 {
+	if rs.MaxRetryTimes == nil {
+		return 5
+	}
+	return *rs.MaxRetryTimes
+}
+
+type ResourceStatusBase struct {
+	// +optional
+	Phase ResourcePhase `json:"phase,omitempty"`
+	// A human readable message indicating details about why resource is in this phase.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+	// TryTimes record the continuous try times.
+	TryTimes int32 `json:"tryTimes"`
+}
+
+func (rb *ResourceStatusBase) GetPhase() ResourcePhase {
+	return rb.Phase
+}
+
+func (rb *ResourceStatusBase) SetPhase(phase ResourcePhase, reason string) {
+	rb.Phase = phase
+	rb.Reason = reason
+}
+
+func (rb *ResourceStatusBase) GetTryTimes() int32 {
+	return rb.TryTimes
+}
+
+func (rb *ResourceStatusBase) SetTryTimes(i int32) {
+	rb.TryTimes = i
+}
+
+func (vmStatus *VirtualMachineStatus) GetBaseExternalInfo() ExternalInfoBase {
+	return vmStatus.ExternalInfo.ExternalInfoBase
+}
+
+func (vmStatus *VirtualMachineStatus) SetBaseExternalInfo(info ExternalInfoBase) {
+	vmStatus.ExternalInfo.ExternalInfoBase = info
+}
+
+func (vmStatus *VirtualMachineStatus) DeepCopy2() IResourceStatus {
+	return vmStatus.DeepCopy()
+}
+
+func (apStatus *AnsiblePlaybookStatus) GetBaseExternalInfo() ExternalInfoBase {
+	return apStatus.ExternalInfo.ExternalInfoBase
+}
+
+func (apStatus *AnsiblePlaybookStatus) DeepCopy2() IResourceStatus {
+	return apStatus.DeepCopy()
+}
+
+func (apStatus *AnsiblePlaybookStatus) SetBaseExternalInfo(info ExternalInfoBase) {
+	apStatus.ExternalInfo.ExternalInfoBase = info
+}
+
+func (vm *VirtualMachine) GetResourceStatus() IResourceStatus {
+	return &vm.Status
+}
+
+func (vm *VirtualMachine) GetResourceSpec() IResourceSpec {
+	return &vm.Spec
+}
+
+func (vm *VirtualMachine) SetResourceStatus(is IResourceStatus) {
+	vm.Status = *is.(*VirtualMachineStatus)
+}
+
+func (ap *AnsiblePlaybook) GetResourceStatus() IResourceStatus {
+	return &ap.Status
+}
+
+func (ap *AnsiblePlaybook) SetResourceStatus(is IResourceStatus) {
+	ap.Status = *is.(*AnsiblePlaybookStatus)
+}
+
+func (ap *AnsiblePlaybook) GetResourceSpec() IResourceSpec {
+	return &ap.Spec
 }

@@ -63,9 +63,11 @@ func main() {
 	}
 
 	if err = (&controllers.VirtualMachineReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("VirtualMachine"),
-		Scheme: mgr.GetScheme(),
+		ReconcilerBase: controllers.ReconcilerBase{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("VirtualMachine"),
+			Scheme: mgr.GetScheme(),
+		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualMachine")
 		os.Exit(1)
@@ -78,9 +80,11 @@ func main() {
 	}
 
 	if err = (&controllers.AnsiblePlaybookReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AnsiblePlaybook"),
-		Scheme: mgr.GetScheme(),
+		ReconcilerBase: controllers.ReconcilerBase{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("AnsiblePlaybook"),
+			Scheme: mgr.GetScheme(),
+		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AnsiblePlaybook")
 		os.Exit(1)
