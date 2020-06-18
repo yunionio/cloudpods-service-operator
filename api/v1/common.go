@@ -173,6 +173,18 @@ func (apStatus *AnsiblePlaybookStatus) SetBaseExternalInfo(info ExternalInfoBase
 	apStatus.ExternalInfo.ExternalInfoBase = info
 }
 
+func (epStatus *EndpointStatus) GetBaseExternalInfo() ExternalInfoBase {
+	return epStatus.ExternalInfo
+}
+
+func (epStatus *EndpointStatus) DeepCopy2() IResourceStatus {
+	return epStatus.DeepCopy()
+}
+
+func (epStatus *EndpointStatus) SetBaseExternalInfo(info ExternalInfoBase) {
+	epStatus.ExternalInfo = info
+}
+
 func (vm *VirtualMachine) GetResourceStatus() IResourceStatus {
 	return &vm.Status
 }
@@ -195,4 +207,16 @@ func (ap *AnsiblePlaybook) SetResourceStatus(is IResourceStatus) {
 
 func (ap *AnsiblePlaybook) GetResourceSpec() IResourceSpec {
 	return &ap.Spec
+}
+
+func (ep *Endpoint) GetResourceStatus() IResourceStatus {
+	return &ep.Status
+}
+
+func (ep *Endpoint) SetResourceStatus(is IResourceStatus) {
+	ep.Status = *is.(*EndpointStatus)
+}
+
+func (ep *Endpoint) GetResourceSpec() IResourceSpec {
+	return &ep.Spec
 }
