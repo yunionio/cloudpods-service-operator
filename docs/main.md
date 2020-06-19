@@ -11,6 +11,7 @@
 - [VirtualMachine](./crds/virtualmachine.md)
 - [AnsiblePlaybookTemplate](./crds/ansibleplaybooktemplate.md) 
 - [AnsiblePlaybook](./crds/ansibleplaybook.md)
+- [Endpoint](./crds/endpoint.md)
 
 ## CRUD
 

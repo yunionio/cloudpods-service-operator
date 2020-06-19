@@ -41,6 +41,7 @@ spec:
 ## 更新 VirtualMachine
 
 目前只有部分 field 是允许更新的（严格来说，都可以更新，只不过只有部分 field 的更新有实际作用）。
+更新操作会触发 OneCloudVM 的更新。
 
 详细文档请参考 [VirtualMachineSpec](../api/docs.md#onecloud.yunion.io/v1.VirtualMachineSpec)，其中标记`AllowUpdate`的 field 是允许更新的。
 
@@ -50,9 +51,9 @@ spec:
 
 ## VirtualMachine Status
 
-### Phase 
+### phase 
 
-`Phase`反映了 VirtualMachine 当前所处的状态（阶段），`Reason`反应了其原因。
+`phase`反映了 VirtualMachine 当前所处的状态（阶段），`reason`反应了其原因。
 
 1. `Pending`: 中间状态，如 OneCloudVM 此时正在创建中、调整配置中或者删除中等等。
 
@@ -66,14 +67,17 @@ spec:
 
 6. `Invalid`: 无效，表明当前的 VirtualMachine 没有也不会有 OneCloudVM，处于此种状态下的 VirtualMachine 没有意义，应该被删除。一个典型的场景就是，尝试创建 OneCloudVM 若干次后失败。
 
-### ExternalInfo
+### tryTimes
 
-`ExternalInfo`存储了 OneCloudVM 的一些信息，包括通用的`Id`，`Status`。
+尝试的次数。
 
-此外还存储了 OneCloudVM 想对于其他 OneCloud 资源特有的`Eip`，`Ips`。
+### externalInfo
+
+`externalInfo`存储了 OneCloudVM 的一些信息，包括通用的`id`，`status`。
+
+此外还存储了 OneCloudVM 想对于其他 OneCloud 资源特有的`eip`，`ips`。
 
 更多请参考文档 [VirtualMachineStatus](../api/docs.md#onecloud.yunion.io/v1.VirtualMachineStatus)。
-
 
 
 
