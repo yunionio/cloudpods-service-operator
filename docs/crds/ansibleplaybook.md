@@ -131,9 +131,9 @@ vars:
 
 ## AnsiblePlaybook Status
 
-### Phase
+### phase
 
-`Phase`反映了 AnsiblePlaybook 当前所处的状态（阶段），`Reason`反应了其原因。
+`phase`反映了 AnsiblePlaybook 当前所处的状态（阶段），`reason`反应了其原因。
 
 1. `Waiting`: 等待状态，正在等待其所依赖的资源，比如等待依赖的 VirtualMachine 处于`Running`中。
 2. `Pending`: 中间状态，如 OneCloudAP 正在创建，正在执行等等。
@@ -142,10 +142,14 @@ vars:
 5. `Finished`: 完成状态，表示 OneCloudAP 成功执行完毕。
 6. `Invalid`: 无效，表明当前的 AnsiblePlaybook 没有也不会有 OneCloudVM，处于此种状态下的 AnsiblePlaybook 没有意义，应该被删除。一个典型的场景就是，尝试创建 OneCloudAP 若干次后失败。
 
-### ExternalInfo
+### tryTimes
 
-`ExternalInfo`存储了 OneCloudAP 的一些信息，包括通用的`Id`，`Status`。
+尝试的次数。
 
-此外还存储了 OneCloudAP 的输出`Output`。
+### externalInfo
+
+`externalInfo`存储了 OneCloudAP 的一些信息，包括通用的`id`，`status`。
+
+此外还存储了 OneCloudAP 的输出`output`。
 
 更多请参考文档 [AnsiblePlaybookStatus](../api/docs.md#onecloud.yunion.io/v1.AnsiblePlaybookStatus)。
