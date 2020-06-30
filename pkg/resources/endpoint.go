@@ -106,8 +106,8 @@ func (ep Endpoint) GetStatus(ctx context.Context) (onecloudv1.IResourceStatus, e
 	}
 	return &onecloudv1.EndpointStatus{
 		ResourceStatusBase: onecloudv1.ResourceStatusBase{
-			Phase:        onecloudv1.ResourceReady,
-			Reason:       "",
+			Phase:  onecloudv1.ResourceReady,
+			Reason: "",
 		},
 		ExternalInfo: extInfo,
 	}, nil
@@ -116,7 +116,7 @@ func (ep Endpoint) GetStatus(ctx context.Context) (onecloudv1.IResourceStatus, e
 type EndpointUpdateField struct {
 	Url                string `json:"url"`
 	Name               string `json:"name"`
-	Enabled            bool `json:"enabled"`
+	Enabled            bool   `json:"enabled"`
 	ServiceCertificate string `json:"service_certificate"`
 }
 
@@ -134,7 +134,7 @@ func (ep Endpoint) Reconcile(ctx context.Context) (*onecloudv1.EndpointStatus, e
 		return nil, err
 	}
 	var change bool
-	if  len(rep.Spec.Name) > 0 && uField.Name != rep.Spec.Name {
+	if len(rep.Spec.Name) > 0 && uField.Name != rep.Spec.Name {
 		uField.Name = rep.Spec.Name
 		change = true
 	}
