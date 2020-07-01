@@ -22,8 +22,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"yunion.io/x/onecloud-service-operator/pkg/resources"
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
+	"yunion.io/x/onecloud-service-operator/pkg/resources"
 )
 
 // EndpointReconciler reconciles a Endpoint object

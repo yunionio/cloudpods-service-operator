@@ -3,7 +3,6 @@ module yunion.io/x/onecloud-service-operator
 go 1.13
 
 require (
-	github.com/coredns/coredns v1.3.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85
@@ -12,10 +11,8 @@ require (
 	k8s.io/apiextensions-apiserver v0.17.2
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v9.0.0+incompatible
-	k8s.io/kubernetes v1.16.0 // indirect
 	sigs.k8s.io/controller-runtime v0.5.0
 	yunion.io/x/jsonutils v0.0.0-20200415132054-2bf8a5e94501
-	yunion.io/x/log v0.0.0-20200313080802-57a4ce5966b3 // indirect
 	yunion.io/x/onecloud v0.0.0-20200427025506-7f96ad48447f
 	yunion.io/x/pkg v0.0.0-20200416145704-22c189971435
 	yunion.io/x/structarg v0.0.0-20200423163001-168d0687be7e

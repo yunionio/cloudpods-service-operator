@@ -2,6 +2,10 @@
 # Env init
 ROOT_DIR := $(CURDIR)
 BUILD_DIR := $(ROOT_DIR)/_output
+REGISTRY ?= registry.cn-beijing.aliyuncs.com/yunionio
+VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
+                git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"

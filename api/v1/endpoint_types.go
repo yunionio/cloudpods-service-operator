@@ -36,7 +36,7 @@ type EndpointSpec struct {
 	// Service certificate id or name
 	// +optional
 	ServiceCertificate string `json:"serviceCertificate,omitempty"`
-	ResourceSpecBase `json:",inline"`
+	ResourceSpecBase   `json:",inline"`
 }
 
 // URL is used to construct url string 'Protocol://Host:Port/Prefix'
@@ -45,9 +45,9 @@ type URL struct {
 	Protocol string      `json:"protocol,omitempty"`
 	Host     StringStore `json:"host,omitempty"`
 	// +optional
-	Port     *int32      `json:"port,omitempty"`
+	Port *int32 `json:"port,omitempty"`
 	// +optional
-	Prefix   string      `json:"prefix,omitempty"`
+	Prefix string `json:"prefix,omitempty"`
 }
 
 // EndpointStatus defines the observed state of Endpoint
