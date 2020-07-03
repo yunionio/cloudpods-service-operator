@@ -53,7 +53,7 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	}
 
 	var (
-		vmPendingAfter = time.Duration(options.Options.VirtualMachineConfig.IntervalPending) * time.Minute
+		vmPendingAfter = time.Duration(options.Options.VirtualMachineConfig.IntervalPending) * time.Second
 	)
 
 	has, ret, err := r.UseFinallizer(ctx, remoteVm)
