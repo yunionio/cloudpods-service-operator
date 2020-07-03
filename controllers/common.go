@@ -121,6 +121,7 @@ func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCReso
 	retryTimes := rs.GetTryTimes()
 	if retryTimes-1 == maxRetryTimes {
 		rs.SetPhase(onecloudv1.ResourceInvalid, fmt.Sprintf("The number of consecutive retry creation failures exceeds the maximum %d", maxRetryTimes))
+		return ctrl.Result{}, r.Status().Update(ctx, resource)
 	}
 	extInfo, err := ocResource.Create(ctx, params)
 	if err != nil {
