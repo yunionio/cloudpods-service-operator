@@ -75,6 +75,7 @@ const (
 	ResourceAP       Resource = "AP"
 	ResourceEndpoint Resource = "Endpoint"
 	ResourceSevice   Resource = "Service"
+	ResourceRegion   Resource = "Region"
 )
 
 // ResourceOperation describe the operation for onecloud resource like create, update, delete and so on.
@@ -178,6 +179,25 @@ func (r SRequest) GetId(ctx context.Context, name string) (string, error) {
 	}
 	session := auth.AdminSession(ctx)
 	return resourceManager.GetId(session, name, nil)
+}
+
+func (r SRequest) List(ctx context.Context, params *jsonutils.JSONDict) ([]jsonutils.JSONObject, error) {
+	resourceManager, ok := Modules[r.resource]
+	if !ok {
+		return nil, fmt.Errorf("no such resource '%s' in Modules", r.resource)
+	}
+	ret, err := resourceManager.List(auth.AdminSession(ctx), params)
+	if err != nil {
+		client, _ := err.(*httputils.JSONClientError)
+		return nil, &SRequestErr{
+			Resource: r.resource,
+			Code:     client.Code,
+			Action:   r.ResourceAction(),
+			Class:    client.Class,
+			Detail:   client.Details,
+		}
+	}
+	return ret.Data, nil
 }
 
 func (r SRequest) Apply(ctx context.Context, id string, params *jsonutils.JSONDict) (jsonutils.JSONObject, onecloudv1.ExternalInfoBase, error) {

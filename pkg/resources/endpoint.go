@@ -17,7 +17,6 @@ package resources
 import (
 	"context"
 	"fmt"
-
 	"yunion.io/x/jsonutils"
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
@@ -26,11 +25,13 @@ import (
 var (
 	RequestEndpoint = Request.Resource(ResourceEndpoint)
 	RequestService  = Request.Resource(ResourceSevice)
+	RequestRegion   = Request.Resource(ResourceRegion)
 )
 
 func init() {
 	Register(ResourceEndpoint, modules.EndpointsV3)
 	Register(ResourceSevice, modules.ServicesV3)
+	Register(ResourceRegion, modules.Regions.ResourceManager)
 }
 
 var (
@@ -65,12 +66,41 @@ func (ep Endpoint) GetIResource() onecloudv1.IResource {
 	return ep.Endpoint
 }
 
+func (ep Endpoint) regionId(ctx context.Context) (string, error) {
+	params := jsonutils.NewDict()
+	params.Set("scope", jsonutils.NewString("system"))
+	objs, err := Request.Resource(ResourceRegion).List(ctx, params)
+	if err != nil {
+		return "", err
+	}
+	var (
+		endpointCount int64
+		regionId      string
+	)
+	for i := range objs {
+		c, _ := objs[i].Int("endpoint_count")
+		if c <= endpointCount {
+			continue
+		}
+		endpointCount = c
+		regionId, _ = objs[i].GetString("id")
+	}
+	return regionId, nil
+}
+
 func (ep Endpoint) Create(ctx context.Context, params interface{}) (onecloudv1.ExternalInfoBase, error) {
 	cp, ok := params.(EndpointCreateParams)
 	if !ok {
 		return onecloudv1.ExternalInfoBase{}, fmt.Errorf("Invalid create params")
 	}
 	var err error
+	// check regionid
+	if len(cp.RegionId) == 0 {
+		cp.RegionId, err = ep.regionId(ctx)
+		if err != nil {
+			return onecloudv1.ExternalInfoBase{}, err
+		}
+	}
 	// find serveice id
 	if len(ServiceID) == 0 {
 		ServiceID, err = RequestService.GetId(ctx, Service)

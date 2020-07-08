@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"yunion.io/x/onecloud-service-operator/pkg/options"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,7 +72,7 @@ func (r *EndpointReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		createParams := resources.EndpointCreateParams{
 			URL:                url,
-			RegionId:           endpoint.Spec.RegionId,
+			RegionId:           options.Options.Region,
 			Name:               endpoint.Spec.Name,
 			Enabled:            true,
 			ServiceCertificate: endpoint.Spec.ServiceCertificate,
