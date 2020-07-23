@@ -72,12 +72,11 @@ func (r *ReconcilerBase) dealErr(ctx context.Context, ocResouce resources.OCReso
 
 	if reErr.IsNotFound(ocResouce.GetResourceName()) {
 		r.setExternalId(re, "")
-	}
-	status := re.GetResourceStatus()
-	if reErr.IsClientErr() {
+	} else if reErr.IsClientErr() {
+		status := re.GetResourceStatus()
 		status.SetPhase(onecloudv1.ResourcePending, reErr.Error())
-	}
-	if reErr.IsServerErr() {
+	} else if reErr.IsServerErr() {
+		status := re.GetResourceStatus()
 		status.SetPhase(onecloudv1.ResourceUnkown, reErr.Error())
 	}
 	return ctrl.Result{}, r.Status().Update(ctx, re)
@@ -124,6 +123,7 @@ func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCReso
 		return ctrl.Result{}, r.Status().Update(ctx, resource)
 	}
 	extInfo, err := ocResource.Create(ctx, params)
+	rs.SetTryTimes(retryTimes + 1)
 	if err != nil {
 		return r.dealErr(ctx, ocResource, err)
 	}
@@ -133,7 +133,6 @@ func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCReso
 	} else {
 		rs.SetPhase(onecloudv1.ResourceReady, "")
 	}
-	rs.SetTryTimes(retryTimes + 1)
 	return ctrl.Result{}, r.Status().Update(ctx, resource)
 }
 

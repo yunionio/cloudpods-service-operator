@@ -3,14 +3,13 @@ kind: Endpoint
 metadata:
   name: endpoint-sample
 spec:
-  regionId: region0
   name: test
   url:
     host:
       reference:
         kind: VirtualMachine
         namespace: onecloud
-        name: ng-nihao
+        name: tm-tmzy
         fieldPath: Status.ExternalInfo.Ips[0]
     port: 8081
     prefix: test

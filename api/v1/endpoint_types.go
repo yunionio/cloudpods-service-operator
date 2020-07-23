@@ -28,7 +28,6 @@ type EndpointSpec struct {
 
 	// Url of this Endpoint
 	URL      URL    `json:"url"`
-	RegionId string `json:"regionId"`
 	// +optional
 	Name string `json:"name,omitempty"`
 	// +optional

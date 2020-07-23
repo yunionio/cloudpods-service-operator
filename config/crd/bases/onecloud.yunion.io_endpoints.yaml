@@ -44,8 +44,6 @@ spec:
               type: integer
             name:
               type: string
-            regionId:
-              type: string
             serviceCertificate:
               description: Service certificate id or name
               type: string
@@ -86,7 +84,6 @@ spec:
                   type: string
               type: object
           required:
-          - regionId
           - url
           type: object
         status:
