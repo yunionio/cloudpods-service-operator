@@ -121,7 +121,7 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 
 	// Pending
 	if virtualMachine.Status.Phase == onecloudv1.ResourcePending {
-		return ctrl.Result{Requeue: true, RequeueAfter: vmPendingAfter * time.Second}, nil
+		return ctrl.Result{Requeue: true, RequeueAfter: vmPendingAfter}, nil
 	}
 
 	// Unkown
