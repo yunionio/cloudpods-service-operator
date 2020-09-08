@@ -27,7 +27,7 @@ type EndpointSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Url of this Endpoint
-	URL      URL    `json:"url"`
+	URL URL `json:"url"`
 	// +optional
 	Name string `json:"name,omitempty"`
 	// +optional
