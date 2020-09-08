@@ -24,8 +24,8 @@ test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
-manager: generate fmt vet
-	go build -mod vendor -o bin/manager main.go
+manager: #fmt vet
+	go build -mod vendor -o _output/bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
@@ -65,7 +65,7 @@ generate-doc:
 	./scripts/gen-doc.sh
 
 # Build the docker image
-docker-build: test 
+docker-build: test
 	docker build . -t $(REGISTRY)/onecloud-service-operator:$(VERSION)
 
 # Push the docker image
@@ -73,9 +73,11 @@ docker-push:
 	docker push $(REGISTRY)/onecloud-service-operator:$(VERSION)
 
 # Simple operator for build and push image in auto build env
-image: 
-	docker build . -t $(REGISTRY)/onecloud-service-operator:$(VERSION)
-	docker push $(REGISTRY)/onecloud-service-operator:$(VERSION)
+image:
+	make generate
+	DOCKER_DIR=${CURDIR} PUSH=true DEBUG=${DEBUG} \
+	REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} \
+	${CURDIR}/scripts/docker_push.sh manager
 
 # find or download controller-gen
 # download controller-gen if necessary
