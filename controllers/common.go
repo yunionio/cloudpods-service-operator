@@ -61,13 +61,14 @@ func (r *ReconcilerBase) setExternalId(resource onecloudv1.IResource, id string)
 }
 
 func (r *ReconcilerBase) dealErr(ctx context.Context, ocResouce resources.OCResource, err error) (ctrl.Result, error) {
+	retryInterval := time.Duration(options.Options.IntervalWaiting) * time.Second
 
 	re := ocResouce.GetIResource()
 	log := r.GetLog(re)
 	reErr, ok := err.(*resources.SRequestErr)
 	if !ok {
 		log.Error(err, "")
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true, RequeueAfter: retryInterval}, err
 	}
 
 	if reErr.IsNotFound(ocResouce.GetResourceName()) {
@@ -79,7 +80,7 @@ func (r *ReconcilerBase) dealErr(ctx context.Context, ocResouce resources.OCReso
 		status := re.GetResourceStatus()
 		status.SetPhase(onecloudv1.ResourceUnkown, reErr.Error())
 	}
-	return ctrl.Result{}, r.Status().Update(ctx, re)
+	return ctrl.Result{Requeue: true, RequeueAfter: retryInterval}, r.Status().Update(ctx, re)
 }
 
 func (r *ReconcilerBase) UseFinallizer(ctx context.Context, ocResource resources.OCResource) (has bool, ret ctrl.Result, err error) {
