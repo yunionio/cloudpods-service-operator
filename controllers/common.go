@@ -119,8 +119,8 @@ func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCReso
 	maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
 	rs := resource.GetResourceStatus()
 	retryTimes := rs.GetTryTimes()
-	if retryTimes-1 == maxRetryTimes {
-		rs.SetPhase(onecloudv1.ResourceInvalid, fmt.Sprintf("The number of consecutive retry creation failures exceeds the maximum %d", maxRetryTimes))
+	if retryTimes == maxRetryTimes {
+		rs.SetPhase(onecloudv1.ResourceInvalid, "")
 		return ctrl.Result{}, r.Status().Update(ctx, resource)
 	}
 	extInfo, err := ocResource.Create(ctx, params)
@@ -148,6 +148,15 @@ func (r *ReconcilerBase) GetStatus(ctx context.Context, ocResource resources.OCR
 	if reflect.DeepEqual(reStatus, resource.GetResourceStatus()) {
 		update = false
 		return
+	}
+	phase := reStatus.GetPhase()
+	if phase == onecloudv1.ResourceFailed {
+		// check if valid
+		retryTimes := resource.GetResourceStatus().GetTryTimes()
+		maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
+		if retryTimes == maxRetryTimes {
+			reStatus.SetPhase(onecloudv1.ResourceInvalid, fmt.Sprintf("Try to check onecloud resource %q via climc or web console", reStatus.GetBaseExternalInfo().Id))
+		}
 	}
 
 	resource.SetResourceStatus(reStatus)
