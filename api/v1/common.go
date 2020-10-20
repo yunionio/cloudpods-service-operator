@@ -138,7 +138,9 @@ func (rb *ResourceStatusBase) GetPhase() ResourcePhase {
 
 func (rb *ResourceStatusBase) SetPhase(phase ResourcePhase, reason string) {
 	rb.Phase = phase
-	rb.Reason = reason
+	if len(reason) > 0 {
+		rb.Reason = reason
+	}
 }
 
 func (rb *ResourceStatusBase) GetTryTimes() int32 {
