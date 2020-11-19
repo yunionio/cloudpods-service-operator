@@ -116,10 +116,10 @@ func (r *ReconcilerBase) UseFinallizer(ctx context.Context, ocResource resources
 
 func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCResource, params interface{}, needPend bool) (ctrl.Result, error) {
 	resource := ocResource.GetIResource()
-	maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
+	maxTryTimes := resource.GetResourceSpec().GetMaxTryTimes()
 	rs := resource.GetResourceStatus()
 	retryTimes := rs.GetTryTimes()
-	if retryTimes == maxRetryTimes {
+	if retryTimes == maxTryTimes {
 		rs.SetPhase(onecloudv1.ResourceInvalid, "")
 		return ctrl.Result{}, r.Status().Update(ctx, resource)
 	}
@@ -153,8 +153,8 @@ func (r *ReconcilerBase) GetStatus(ctx context.Context, ocResource resources.OCR
 	if phase == onecloudv1.ResourceFailed {
 		// check if valid
 		retryTimes := resource.GetResourceStatus().GetTryTimes()
-		maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
-		if retryTimes == maxRetryTimes {
+		maxTryTimes := resource.GetResourceSpec().GetMaxTryTimes()
+		if retryTimes == maxTryTimes {
 			reStatus.SetPhase(onecloudv1.ResourceInvalid, fmt.Sprintf("Try to check onecloud resource %q via climc or web console", reStatus.GetBaseExternalInfo().Id))
 		}
 	}
