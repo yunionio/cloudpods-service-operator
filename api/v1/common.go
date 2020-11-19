@@ -106,20 +106,20 @@ type IResourceStatus interface {
 
 // +kubebuilder:object:generate=false
 type IResourceSpec interface {
-	GetMaxRetryTimes() int32
+	GetMaxTryTimes() int32
 }
 
 type ResourceSpecBase struct {
 	// Nil or Non-positive number means unlimited.
 	// +optional
-	MaxRetryTimes *int32 `json:"maxRetryTimes,omitempty"`
+	MaxTryTimes *int32 `json:"maxRetryTimes,omitempty"`
 }
 
-func (rs *ResourceSpecBase) GetMaxRetryTimes() int32 {
-	if rs.MaxRetryTimes == nil {
+func (rs *ResourceSpecBase) GetMaxTryTimes() int32 {
+	if rs.MaxTryTimes == nil {
 		return 5
 	}
-	return *rs.MaxRetryTimes
+	return *rs.MaxTryTimes
 }
 
 type ResourceStatusBase struct {
