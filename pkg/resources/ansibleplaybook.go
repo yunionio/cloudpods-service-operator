@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
+
 	"yunion.io/x/jsonutils"
 	anapi "yunion.io/x/onecloud/pkg/apis/ansible"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
@@ -36,10 +38,11 @@ func init() {
 
 type AnsiblePlaybook struct {
 	AnsiblePlaybook *onecloudv1.AnsiblePlaybook
+	logger          logr.Logger
 }
 
-func NewAnisblePlaybook(ap *onecloudv1.AnsiblePlaybook) AnsiblePlaybook {
-	return AnsiblePlaybook{ap}
+func NewAnisblePlaybook(ap *onecloudv1.AnsiblePlaybook, logger logr.Logger) AnsiblePlaybook {
+	return AnsiblePlaybook{ap, logger}
 }
 
 func (ap AnsiblePlaybook) GetIResource() onecloudv1.IResource {
