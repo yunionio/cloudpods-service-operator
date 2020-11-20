@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -46,7 +45,7 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	}
 
 	log := r.GetLog(&virtualMachine)
-	remoteVm := resources.NewVirtualMachine(&virtualMachine)
+	remoteVm := resources.NewVirtualMachine(&virtualMachine, log)
 
 	dealErr := func(err error) (ctrl.Result, error) {
 		return r.dealErr(ctx, remoteVm, err)
@@ -132,9 +131,9 @@ func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	return ctrl.Result{}, nil
 }
 
-func (r *VirtualMachineReconciler) reconcile(ctx context.Context, log logr.Logger, remoteVm resources.VirtualMachine) (vmStatus *onecloudv1.VirtualMachineStatus, specPhase onecloudv1.ResourcePhase, err error) {
+func (r *VirtualMachineReconciler) reconcile(ctx context.Context, remoteVm resources.VirtualMachine) (vmStatus *onecloudv1.VirtualMachineStatus, specPhase onecloudv1.ResourcePhase, err error) {
 	specPhase = onecloudv1.ResourceRunning
-	oper, vmInfo, err := remoteVm.Reconcile(ctx, log)
+	oper, vmInfo, err := remoteVm.Reconcile(ctx)
 	if err != nil {
 		return
 	}
