@@ -53,7 +53,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	log := r.GetLog(&ansiblePlaybook)
-	remoteAp := resources.NewAnisblePlaybook(&ansiblePlaybook)
+	remoteAp := resources.NewAnisblePlaybook(&ansiblePlaybook, log)
 
 	dealErr := func(err error) (ctrl.Result, error) {
 		return r.dealErr(ctx, remoteAp, err)

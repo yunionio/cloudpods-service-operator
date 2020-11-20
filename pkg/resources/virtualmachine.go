@@ -32,10 +32,11 @@ import (
 
 type VirtualMachine struct {
 	VirtualMachine *onecloudv1.VirtualMachine
+	logger         logr.Logger
 }
 
-func NewVirtualMachine(vm *onecloudv1.VirtualMachine) VirtualMachine {
-	return VirtualMachine{vm}
+func NewVirtualMachine(vm *onecloudv1.VirtualMachine, logger logr.Logger) VirtualMachine {
+	return VirtualMachine{vm, logger}
 }
 
 func (vi VirtualMachine) GetIResource() onecloudv1.IResource {
@@ -46,11 +47,43 @@ func (vi VirtualMachine) GetResourceName() Resource {
 	return ResourceVM
 }
 
+func (vi VirtualMachine) cachedimageId(ctx context.Context, cloudregion, imageName string) string {
+	if len(imageName) == 0 {
+		return imageName
+	}
+	filter := fmt.Sprintf(`name.equals(%q)`, imageName)
+	params := jsonutils.NewDict()
+	params.Set("filter", jsonutils.NewString(filter))
+	params.Set("cloudregion", jsonutils.NewString(cloudregion))
+	data, err := Request.Resource(ResourceCachedImage).List(ctx, params)
+	if err != nil {
+		vi.logger.V(1).Info("unable to List cachedimage", "error", err)
+		return imageName
+	}
+	if len(data) == 0 {
+		vi.logger.V(1).Info("no such cachedimage", "name", imageName, "cloudregion", cloudregion)
+		return imageName
+	}
+	id, _ := data[0].GetString("id")
+	if len(id) == 0 {
+		return imageName
+	}
+	return id
+}
+
 func (vi VirtualMachine) Create(ctx context.Context, _ interface{}) (onecloudv1.ExternalInfoBase, error) {
 	vm := vi.VirtualMachine
 	serverCreateInput := ConvertVM(vm.Spec)
 	if len(serverCreateInput.Name) == 0 && len(serverCreateInput.GenerateName) == 0 {
 		serverCreateInput.GenerateName = vm.ObjectMeta.Name
+	}
+	// Try convert image to image_id
+	if len(serverCreateInput.PreferRegion) > 0 {
+		for i := range serverCreateInput.Disks {
+			imageid := vi.cachedimageId(ctx, serverCreateInput.PreferRegion, serverCreateInput.Disks[i].ImageId)
+			vi.logger.V(1).Info("try to get imageId", "imageId", imageid)
+			serverCreateInput.Disks[i].ImageId = imageid
+		}
 	}
 	params := serverCreateInput.JSON(serverCreateInput)
 	_, s, e := RequestVM.Operation(OperCreate).Apply(ctx, "", params)
@@ -143,7 +176,7 @@ func (vi VirtualMachine) Stop(ctx context.Context) (onecloudv1.ExternalInfoBase,
 	return s, e
 }
 
-func (vi VirtualMachine) Reconcile(ctx context.Context, logger logr.Logger) (oper *ReconcileOper, vmInfo *onecloudv1.VMInfo, err error) {
+func (vi VirtualMachine) Reconcile(ctx context.Context) (oper *ReconcileOper, vmInfo *onecloudv1.VMInfo, err error) {
 	vm := vi.VirtualMachine
 	// fetch vm details
 	vmJson, extInfo, err := RequestVMGetDetails.Apply(ctx, vm.Status.ExternalInfo.Id, nil)
@@ -173,12 +206,12 @@ func (vi VirtualMachine) Reconcile(ctx context.Context, logger logr.Logger) (ope
 		return
 	}
 	// change config
-	oper = vi.changeConfig(logger, &serverDetail, &vm.Spec.VmConfig)
+	oper = vi.changeConfig(&serverDetail, &vm.Spec.VmConfig)
 	if oper != nil {
 		return
 	}
 	// disk resize
-	oper = vi.diskResize(logger, &serverDetail, &vm.Spec.VmConfig)
+	oper = vi.diskResize(&serverDetail, &vm.Spec.VmConfig)
 	if oper != nil {
 		return
 	}
@@ -192,10 +225,9 @@ func (vi VirtualMachine) Reconcile(ctx context.Context, logger logr.Logger) (ope
 	return
 }
 
-func (vi VirtualMachine) eipChangeBw(ctx context.Context, logger logr.Logger, serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) (*ReconcileOper, error) {
+func (vi VirtualMachine) eipChangeBw(ctx context.Context, serverDetail *comapi.ServerDetails, vmSpec *onecloudv1.VirtualMachineSpec) (*ReconcileOper, error) {
 	if len(vmSpec.Eip) != 0 && vmSpec.Eip != serverDetail.Eip {
-		logger.V(1).Info(fmt.Sprintf("The actual eip '%s' is different from this '%s' in spec", serverDetail.Eip,
-			vmSpec.Eip))
+		vi.logger.Info("eip changed", "gotEip", serverDetail.Eip, "wantEip", vmSpec.Eip)
 		return nil, nil
 	}
 	if vmSpec.NewEip == nil {
@@ -282,7 +314,7 @@ func (vi VirtualMachine) update(serverDetail *comapi.ServerDetails, vmSpec *onec
 	return nil
 }
 
-func (vi VirtualMachine) diskResize(logger logr.Logger, serverDetails *comapi.ServerDetails,
+func (vi VirtualMachine) diskResize(serverDetails *comapi.ServerDetails,
 	vmConfig *onecloudv1.VirtualMachineConfig) *ReconcileOper {
 	diskSizeMap := make(map[string]int64)
 	odesc := OperatorDesc{Name: "Disk Resize"}
@@ -293,8 +325,7 @@ func (vi VirtualMachine) diskResize(logger logr.Logger, serverDetails *comapi.Se
 		diskSizeMap[rootDiskInfo.Id] = specSize
 		odesc.Appendf(`resize "RootDisk.SizeGB" from (%d) to (%d)`, realSize, specSize)
 	} else if realSize > specSize {
-		logger.V(1).Info(fmt.Sprintf("The actual size '%d' of the vm system disk is greater than that '%d' stated in the spec",
-			realSize, specSize))
+		vi.logger.Info("the system disk looks larger", "gotSize", realSize, "wantSize", specSize)
 	}
 	// check DataDisk
 	for i := range vmConfig.DataDisks {
@@ -303,8 +334,7 @@ func (vi VirtualMachine) diskResize(logger logr.Logger, serverDetails *comapi.Se
 			diskSizeMap[serverDetails.DisksInfo[i+1].Id] = specSize
 			odesc.Appendf(`resize "DataDisks[%d].SizeGB" from (%d) to (%d)`, i, realSize, specSize)
 		} else if realSize > specSize {
-			logger.V(1).Info(fmt.Sprintf("The actual size '%d' of DataDisk whose index is '%d' is greater than that '%d"+
-				"' stated in the spec", realSize, i+1, specSize))
+			vi.logger.Info("the data disk looks larger", "index", i+1, "gotSize", realSize, "wantSize", specSize)
 		}
 	}
 	if len(diskSizeMap) == 0 {
@@ -333,7 +363,7 @@ func (vi VirtualMachine) diskResize(logger logr.Logger, serverDetails *comapi.Se
 }
 
 // support
-func (vi VirtualMachine) changeConfig(logger logr.Logger, serverDetails *comapi.ServerDetails,
+func (vi VirtualMachine) changeConfig(serverDetails *comapi.ServerDetails,
 	vmConfig *onecloudv1.VirtualMachineConfig) *ReconcileOper {
 	var (
 		params   = jsonutils.NewDict()
@@ -378,8 +408,7 @@ func (vi VirtualMachine) changeConfig(logger logr.Logger, serverDetails *comapi.
 		}
 		params.Set("disks", disks)
 	} else if specN < realN {
-		logger.V(1).Info(fmt.Sprintf("The actual number '%d' of data disks is greater than that '%d stated in the spec",
-			realN, specN))
+		vi.logger.Info("the number of disks looks more", "gotNumber", realN, "wantNumber", specN)
 	}
 	// change config operator
 	if params.Length() == 0 {
@@ -434,6 +463,7 @@ func init() {
 	Register(ResourceVM, modules.Servers.ResourceManager)
 	Register(ResourceEIP, modules.Elasticips)
 	Register(ResourceDisk, modules.Disks)
+	Register(ResourceCachedImage, modules.Cachedimages)
 
 	deleteParams := jsonutils.NewDict()
 	deleteParams.Set("override_pending_delete", jsonutils.JSONTrue)
