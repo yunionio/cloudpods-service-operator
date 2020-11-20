@@ -17,6 +17,8 @@ package resources
 import (
 	"context"
 	"fmt"
+
+	"github.com/go-logr/logr"
 	"yunion.io/x/jsonutils"
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
@@ -52,10 +54,11 @@ type EndpointCreateParams struct {
 
 type Endpoint struct {
 	Endpoint *onecloudv1.Endpoint
+	logger   logr.Logger
 }
 
-func NewEndpoint(ep *onecloudv1.Endpoint) Endpoint {
-	return Endpoint{ep}
+func NewEndpoint(ep *onecloudv1.Endpoint, logger logr.Logger) Endpoint {
+	return Endpoint{ep, logger}
 }
 
 func (ep Endpoint) GetResourceName() Resource {

@@ -64,10 +64,10 @@ func (r *ReconcilerBase) dealErr(ctx context.Context, ocResouce resources.OCReso
 	retryInterval := time.Duration(options.Options.IntervalWaiting) * time.Second
 
 	re := ocResouce.GetIResource()
-	log := r.GetLog(re)
 	reErr, ok := err.(*resources.SRequestErr)
 	if !ok {
-		log.Error(err, "")
+		log := r.GetLog(re)
+		log.Info("not SRequestErr", "error", err)
 		return ctrl.Result{Requeue: true, RequeueAfter: retryInterval}, err
 	}
 
@@ -116,10 +116,10 @@ func (r *ReconcilerBase) UseFinallizer(ctx context.Context, ocResource resources
 
 func (r *ReconcilerBase) Create(ctx context.Context, ocResource resources.OCResource, params interface{}, needPend bool) (ctrl.Result, error) {
 	resource := ocResource.GetIResource()
-	maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
+	maxTryTimes := resource.GetResourceSpec().GetMaxTryTimes()
 	rs := resource.GetResourceStatus()
 	retryTimes := rs.GetTryTimes()
-	if retryTimes == maxRetryTimes {
+	if retryTimes == maxTryTimes {
 		rs.SetPhase(onecloudv1.ResourceInvalid, "")
 		return ctrl.Result{}, r.Status().Update(ctx, resource)
 	}
@@ -153,8 +153,8 @@ func (r *ReconcilerBase) GetStatus(ctx context.Context, ocResource resources.OCR
 	if phase == onecloudv1.ResourceFailed {
 		// check if valid
 		retryTimes := resource.GetResourceStatus().GetTryTimes()
-		maxRetryTimes := resource.GetResourceSpec().GetMaxRetryTimes()
-		if retryTimes == maxRetryTimes {
+		maxTryTimes := resource.GetResourceSpec().GetMaxTryTimes()
+		if retryTimes == maxTryTimes {
 			reStatus.SetPhase(onecloudv1.ResourceInvalid, fmt.Sprintf("Try to check onecloud resource %q via climc or web console", reStatus.GetBaseExternalInfo().Id))
 		}
 	}
@@ -203,12 +203,11 @@ func (r *ReconcilerBase) MarkWaiting(ctx context.Context, resource onecloudv1.IR
 		waitIntervel = time.Duration(options.Options.IntervalWaiting) * time.Second
 	}
 	if reflect.DeepEqual(newStatus, resource.GetResourceStatus()) {
-		log.Info(fmt.Sprintf("no need to update, requeue after %s", waitIntervel.String()))
+		log.V(1).Info("no update", "requeue", waitIntervel.String())
 		return ctrl.Result{Requeue: true, RequeueAfter: waitIntervel}, nil
 	}
 	resource.SetResourceStatus(newStatus)
 	if err := r.Status().Update(ctx, resource); err != nil {
-		log.Error(err, fmt.Sprintf("unable to update %s", resource.GetObjectKind().GroupVersionKind().Kind))
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
