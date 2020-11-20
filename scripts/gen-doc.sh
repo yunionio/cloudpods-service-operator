@@ -25,6 +25,18 @@ pushd $(cd "$(dirname "$0")"; pwd) > /dev/null
 readlink_mac $(basename "$0")
 cd "$(dirname "$REAL_PATH")"
 
-$GOBIN/gen-api-docs -config ./gen-doc/example-config.json -api-dir ../api/v1 -out-file ../docs/api/docs.md -template-dir ./gen-doc/template
+genDoc=$GOPATH/bin/gen-crd-api-reference-docs
+if [ ! -f "$genDoc" ]; then
+  # make tmp dir
+  tmpDir=$(mktemp -d)
+  docDir=$tmpDir/gen-crd-api-reference-docs
+  # install gen-crd-api-reference-docs
+  git clone https://github.com/rainzm/gen-crd-api-reference-docs $docDir && cd $docDir
+  go install
+  cd -
+  rm -rf $tmpDir
+fi
+
+$genDoc -config ./gen-doc/example-config.json -api-dir ../api/v1 -out-file ../docs/api/docs.md -template-dir ./gen-doc/template
 
 popd > /dev/null
