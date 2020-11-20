@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+
 	"yunion.io/x/onecloud-service-operator/pkg/options"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -45,7 +46,7 @@ func (r *EndpointReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	log := r.GetLog(&endpoint)
-	remoteEP := resources.NewEndpoint(&endpoint)
+	remoteEP := resources.NewEndpoint(&endpoint, log)
 
 	dealErr := func(err error) (ctrl.Result, error) {
 		return r.dealErr(ctx, remoteEP, err)
