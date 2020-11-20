@@ -47,11 +47,43 @@ func (vi VirtualMachine) GetResourceName() Resource {
 	return ResourceVM
 }
 
+func (vi VirtualMachine) cachedimageId(ctx context.Context, cloudregion, imageName string) string {
+	if len(imageName) == 0 {
+		return imageName
+	}
+	filter := fmt.Sprintf(`name.equals(%q)`, imageName)
+	params := jsonutils.NewDict()
+	params.Set("filter", jsonutils.NewString(filter))
+	params.Set("cloudregion", jsonutils.NewString(cloudregion))
+	data, err := Request.Resource(ResourceCachedImage).List(ctx, params)
+	if err != nil {
+		vi.logger.V(1).Info("unable to List cachedimage", "error", err)
+		return imageName
+	}
+	if len(data) == 0 {
+		vi.logger.V(1).Info("no such cachedimage", "name", imageName, "cloudregion", cloudregion)
+		return imageName
+	}
+	id, _ := data[0].GetString("id")
+	if len(id) == 0 {
+		return imageName
+	}
+	return id
+}
+
 func (vi VirtualMachine) Create(ctx context.Context, _ interface{}) (onecloudv1.ExternalInfoBase, error) {
 	vm := vi.VirtualMachine
 	serverCreateInput := ConvertVM(vm.Spec)
 	if len(serverCreateInput.Name) == 0 && len(serverCreateInput.GenerateName) == 0 {
 		serverCreateInput.GenerateName = vm.ObjectMeta.Name
+	}
+	// Try convert image to image_id
+	if len(serverCreateInput.PreferRegion) > 0 {
+		for i := range serverCreateInput.Disks {
+			imageid := vi.cachedimageId(ctx, serverCreateInput.PreferRegion, serverCreateInput.Disks[i].ImageId)
+			vi.logger.V(1).Info("try to get imageId", "imageId", imageid)
+			serverCreateInput.Disks[i].ImageId = imageid
+		}
 	}
 	params := serverCreateInput.JSON(serverCreateInput)
 	_, s, e := RequestVM.Operation(OperCreate).Apply(ctx, "", params)
@@ -431,6 +463,7 @@ func init() {
 	Register(ResourceVM, modules.Servers.ResourceManager)
 	Register(ResourceEIP, modules.Elasticips)
 	Register(ResourceDisk, modules.Disks)
+	Register(ResourceCachedImage, modules.Cachedimages)
 
 	deleteParams := jsonutils.NewDict()
 	deleteParams.Set("override_pending_delete", jsonutils.JSONTrue)
