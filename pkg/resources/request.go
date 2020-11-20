@@ -69,13 +69,14 @@ func (ad *OperatorDesc) String() string {
 type Resource string
 
 const (
-	ResourceVM       Resource = "VM"
-	ResourceEIP      Resource = "EIP"
-	ResourceDisk     Resource = "Disk"
-	ResourceAP       Resource = "AP"
-	ResourceEndpoint Resource = "Endpoint"
-	ResourceSevice   Resource = "Service"
-	ResourceRegion   Resource = "Region"
+	ResourceVM          Resource = "VM"
+	ResourceEIP         Resource = "EIP"
+	ResourceDisk        Resource = "Disk"
+	ResourceAP          Resource = "AP"
+	ResourceEndpoint    Resource = "Endpoint"
+	ResourceSevice      Resource = "Service"
+	ResourceRegion      Resource = "Region"
+	ResourceCachedImage Resource = "CachedImage"
 )
 
 // ResourceOperation describe the operation for onecloud resource like create, update, delete and so on.
