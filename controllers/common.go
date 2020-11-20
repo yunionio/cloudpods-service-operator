@@ -64,10 +64,10 @@ func (r *ReconcilerBase) dealErr(ctx context.Context, ocResouce resources.OCReso
 	retryInterval := time.Duration(options.Options.IntervalWaiting) * time.Second
 
 	re := ocResouce.GetIResource()
-	log := r.GetLog(re)
 	reErr, ok := err.(*resources.SRequestErr)
 	if !ok {
-		log.Error(err, "")
+		log := r.GetLog(re)
+		log.Info("not SRequestErr", "error", err)
 		return ctrl.Result{Requeue: true, RequeueAfter: retryInterval}, err
 	}
 
@@ -203,12 +203,11 @@ func (r *ReconcilerBase) MarkWaiting(ctx context.Context, resource onecloudv1.IR
 		waitIntervel = time.Duration(options.Options.IntervalWaiting) * time.Second
 	}
 	if reflect.DeepEqual(newStatus, resource.GetResourceStatus()) {
-		log.Info(fmt.Sprintf("no need to update, requeue after %s", waitIntervel.String()))
+		log.V(1).Info("no update", "requeue", waitIntervel.String())
 		return ctrl.Result{Requeue: true, RequeueAfter: waitIntervel}, nil
 	}
 	resource.SetResourceStatus(newStatus)
 	if err := r.Status().Update(ctx, resource); err != nil {
-		log.Error(err, fmt.Sprintf("unable to update %s", resource.GetObjectKind().GroupVersionKind().Kind))
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
