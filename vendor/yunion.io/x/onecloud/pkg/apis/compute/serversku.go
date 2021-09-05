@@ -19,23 +19,15 @@ import (
 )
 
 type ServerSkuCreateInput struct {
-	apis.StatusStandaloneResourceCreateInput
+	apis.EnabledStatusStandaloneResourceCreateInput
 
 	// 区域名称或Id,建议使用Id
 	// default: default
-	Cloudregion string `json:"cloudregion"`
-	// swagger:ignore
-	CloudregionId string
+	CloudregionId string `json:"cloudregion_id"`
 
 	// 可用区名称或Id, 建议使用Id
 	// required: false
-	Zone string `json:"zone"`
-	// swagger:ignore
-	ZoneId string
-
-	// 是否启用
-	// default: true
-	Enabled *bool `json:"enabled"`
+	ZoneId string `json:"zone_id"`
 
 	// swagger:ignore
 	InstanceTypeFamily string
@@ -132,18 +124,29 @@ type ServerSkuCreateInput struct {
 }
 
 type ServerSkuDetails struct {
-	apis.StatusStandaloneResourceDetails
+	apis.EnabledStatusStandaloneResourceDetails
 
-	ZoneResourceInfo
+	ZoneResourceInfoBase
+	CloudregionResourceInfo
 
 	SServerSku
+
+	// 云环境
+	CloudEnv string `json:"cloud_env"`
 
 	// 绑定云主机数量
 	TotalGuestCount int `json:"total_guest_count"`
 }
 
 type ServerSkuUpdateInput struct {
-	apis.StatusStandaloneResourceBaseUpdateInput
+	apis.EnabledStatusStandaloneResourceBaseUpdateInput
+
+	// 预付费状态
+	// default: available
+	PrepaidStatus string `json:"prepaid_status"`
+	// 后付费状态
+	// default: available
+	PostpaidStatus string `json:"postpaid_status"`
 
 	InstanceTypeFamily string `json:"instance_type_family"`
 

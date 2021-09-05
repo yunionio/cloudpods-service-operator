@@ -44,7 +44,9 @@ type WireDetails struct {
 	// IP子网数量
 	// example: 1
 	Networks int `json:"networks"`
-	// VPC名称
+	// Host数量
+	// example: 1
+	HostCount int `json:"host_count"`
 }
 
 type WireResourceInfoBase struct {
@@ -71,11 +73,11 @@ type WireUpdateInput struct {
 	apis.InfrasResourceBaseUpdateInput
 
 	// bandwidth in MB
-	Bandwidth int `json:"bandwidth"`
+	Bandwidth *int `json:"bandwidth"`
 
 	// MTU
 	// example: 1500
-	Mtu int `json:"mtu"`
+	Mtu *int `json:"mtu"`
 }
 
 type WireListInput struct {
@@ -87,4 +89,29 @@ type WireListInput struct {
 	ZonalFilterListBase
 
 	HostResourceInput
+
+	Bandwidth *int   `json:"bandwidth"`
+	HostType  string `json:"host_type"`
+}
+
+type WireMergeInput struct {
+	// description: wire id or name to be merged
+	// required: true
+	// example: test-wire
+	Target string `json:"target"`
+	// description: if merge networks under wire
+	// required: false
+	MergeNetwork bool `json:"merge_network"`
+}
+
+type WireMergeFromInput struct {
+	// description: wire ids or names to be merged from
+	// required: true
+	Sources []string `json:"sources"`
+	// description: if merge networks under wire
+	// required: false
+	MergeNetwork bool `json:"merge_network"`
+}
+
+type WireMergeNetworkInput struct {
 }

@@ -44,6 +44,7 @@ type DBInstanceDatabaseCreateInput struct {
 	// | ----		|-------					|
 	// | Aliyun		|MySQL, MariaBD, SQLServer  |
 	// | 华为云		|MySQL, MariaBD				|
+	// | 腾讯云		|           				|
 	// required: true
 	// 阿里云SQL Server 2017集群版不支持创建数据库
 	// 阿里云只读实例不支持创建数据库
@@ -63,12 +64,14 @@ type DBInstanceDatabaseCreateInput struct {
 
 type DBInstancedatabaseDetails struct {
 	apis.StatusStandaloneResourceDetails
+	apis.ProjectizedResourceInfo
 	DBInstanceResourceInfo
 
 	SDBInstanceDatabase
 
 	// 数据库权限
 	DBInstanceprivileges []DBInstancePrivilege `json:"dbinstanceprivileges"`
+	ProjectId            string                `json:"tenant_id"`
 }
 
 type DBInstanceparameterDetails struct {
@@ -76,4 +79,8 @@ type DBInstanceparameterDetails struct {
 	DBInstanceResourceInfo
 
 	SDBInstanceParameter
+}
+
+type DBInstanceDatabaseUpdateInput struct {
+	apis.StatusStandaloneResourceBaseUpdateInput
 }

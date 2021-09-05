@@ -24,7 +24,7 @@ func init() {
 	SecGroupRules = NewComputeManager("secgrouprule", "secgrouprules",
 		[]string{"ID", "Name", "Direction",
 			"Action", "Protocol", "Ports", "Priority",
-			"Cidr", "Description"},
+			"Cidr", "Secgroup", "Peer_Secgroup_Id", "Peer_Secgroup", "Tenant", "Description"},
 		[]string{"SecGroups"})
 
 	registerCompute(&SecGroupRules)

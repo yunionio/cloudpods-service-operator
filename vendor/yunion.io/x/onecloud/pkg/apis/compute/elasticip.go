@@ -21,23 +21,22 @@ type SElasticipCreateInput struct {
 
 	// 区域名称或Id, 建议使用Id
 	// 在指定区域内创建弹性公网ip
-	Cloudregion string `json:"cloudregion"`
+	CloudregionId string `json:"cloudregion_id"`
+	// swagger:ignore
+	Cloudregion string `json:"cloudregion" yunion-deprecated-by:"cloudregion_id"`
+	// swagger:ignore
+	Region string `json:"region" yunion-deprecated-by:"cloudregion_id"`
+	// swagger:ignore
+	RegionId string `json:"region_id" yunion-deprecated-by:"cloudregion_id"`
 
 	// swagger:ignore
-	Region string
+	Cloudprovider string `json:"cloudprovider" yunion-deprecated-by:"manager_id"`
 	// swagger:ignore
-	RegionId string
-	// swagger:ignore
-	CloudregionId string
-
+	Manager string `json:"manager" yunion-deprecated-by:"manager_id"`
 	// 子订阅Id, 建议使用Id
 	// 使用指定子订阅创建弹性公网ip
 	// 弹性公网ip和虚拟机在同一区域同一子订阅底下，才可以进行绑定操作
-	Cloudprovider string `json:"cloudprovider"`
-	// swagger:ignore
-	Manager string
-	// swagger:ignore
-	ManagerId string
+	ManagerId string `json:"manager_id"`
 
 	// 计费类型: 流量或带宽
 	//
@@ -61,11 +60,20 @@ type SElasticipCreateInput struct {
 	// enum: traffic, bandwidth
 	ChargeType string `json:"charge_type"`
 
-	// 子网名称或Id
-	// 私有云创建此参数必传,例如Openstack, ZStack
-	Network string `json:"network"`
+	Mode string `json:"mode"`
+
 	// swagger:ignore
-	NetworkId string
+	Network string `json:"network" yunion-deprecated-by:"network_id"`
+	// 子网Id
+	// 私有云创建此参数必传,例如Openstack, ZStack
+	NetworkId string `json:"network_id"`
+	// 指定新建EIP的地址
+	IpAddr string `json:"ip_addr"`
+
+	// description: BgpType for the new eip
+	BgpType string `json:"bgp_type"`
+
+	BandwidthMb int `json:"bandwidth"`
 }
 
 type ElasticipDetails struct {
@@ -80,4 +88,19 @@ type ElasticipDetails struct {
 }
 
 type ElasticipSyncstatusInput struct {
+}
+
+type ElasticipAssociateInput struct {
+	// 待绑定实例Id
+	InstanceId string `json:"instance_id"`
+	// swagger:ignore
+	InstanceExternalId string `json:"instance_external_id"`
+
+	// swagger:ignore
+	Instance string `json:"instance" yunion-deprecated-by:"instance_id"`
+
+	// 实例类型
+	// enmu: server, natgateway
+	// default: server
+	InstanceType string `json:"instance_type"`
 }

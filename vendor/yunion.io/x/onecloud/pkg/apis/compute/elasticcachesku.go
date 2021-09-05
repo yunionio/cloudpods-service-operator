@@ -20,6 +20,10 @@ type ElasticcacheSkuDetails struct {
 	apis.StatusStandaloneResourceDetails
 	CloudregionResourceInfo
 	ZoneResourceInfoBase
+	SlaveZoneResourceInfoBase
 
 	SElasticcacheSku
+
+	// 云环境
+	CloudEnv string `json:"cloud_env"`
 }

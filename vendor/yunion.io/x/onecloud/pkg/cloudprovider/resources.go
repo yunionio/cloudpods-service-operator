@@ -19,11 +19,13 @@ import (
 	"time"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/pkg/errors"
 	"yunion.io/x/pkg/tristate"
-	"yunion.io/x/pkg/util/secrules"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/util/billing"
+	"yunion.io/x/onecloud/pkg/util/rbacutils"
+	"yunion.io/x/onecloud/pkg/util/samlutils"
 )
 
 type ICloudResource interface {
@@ -36,7 +38,15 @@ type ICloudResource interface {
 	Refresh() error
 
 	IsEmulated() bool
-	GetMetadata() *jsonutils.JSONDict
+
+	GetSysTags() map[string]string
+	GetTags() (map[string]string, error)
+	SetTags(tags map[string]string, replace bool) error
+}
+
+type ICloudEnabledResource interface {
+	ICloudResource
+	GetEnabled() bool
 }
 
 type IVirtualResource interface {
@@ -50,11 +60,17 @@ type IBillingResource interface {
 	GetCreatedAt() time.Time
 	GetExpiredAt() time.Time
 	SetAutoRenew(autoRenew bool) error
+	Renew(bc billing.SBillingCycle) error
 	IsAutoRenew() bool
+}
+
+type ICloudI18nResource interface {
+	GetI18n() SModelI18nTable
 }
 
 type ICloudRegion interface {
 	ICloudResource
+	ICloudI18nResource
 
 	// GetLatitude() float32
 	// GetLongitude() float32
@@ -71,10 +87,11 @@ type ICloudRegion interface {
 	GetIDiskById(id string) (ICloudDisk, error)
 
 	GetISecurityGroupById(secgroupId string) (ICloudSecurityGroup, error)
-	GetISecurityGroupByName(vpcId string, name string) (ICloudSecurityGroup, error)
+	GetISecurityGroupByName(opts *SecurityGroupFilterOptions) (ICloudSecurityGroup, error)
 	CreateISecurityGroup(conf *SecurityGroupCreateInput) (ICloudSecurityGroup, error)
 
 	CreateIVpc(name string, desc string, cidr string) (ICloudVpc, error)
+	CreateInternetGateway() (ICloudInternetGateway, error)
 	CreateEIP(eip *SEip) (ICloudEIP, error)
 
 	GetISnapshots() ([]ICloudSnapshot, error)
@@ -111,7 +128,9 @@ type ICloudRegion interface {
 	CreateILoadBalancerCertificate(cert *SLoadbalancerCertificate) (ICloudLoadbalancerCertificate, error)
 
 	GetISkus() ([]ICloudSku, error)
-	CreateISku(name string, vCpu int, memoryMb int) error
+	CreateISku(opts *SServerSkuCreateOption) (ICloudSku, error)
+
+	GetICloudNatSkus() ([]ICloudNatSku, error)
 
 	GetINetworkInterfaces() ([]ICloudNetworkInterface, error)
 
@@ -126,6 +145,7 @@ type ICloudRegion interface {
 	GetIDBInstanceById(instanceId string) (ICloudDBInstance, error)
 	GetIDBInstanceBackups() ([]ICloudDBInstanceBackup, error)
 	GetIDBInstanceBackupById(backupId string) (ICloudDBInstanceBackup, error)
+	GetIDBInstanceSkus() ([]ICloudDBInstanceSku, error)
 
 	CreateIDBInstance(desc *SManagedDBInstanceCreateConfig) (ICloudDBInstance, error)
 
@@ -141,10 +161,39 @@ type ICloudRegion interface {
 	GetCapabilities() []string
 
 	GetICloudQuotas() ([]ICloudQuota, error)
+
+	GetICloudFileSystems() ([]ICloudFileSystem, error)
+	GetICloudFileSystemById(id string) (ICloudFileSystem, error)
+
+	CreateICloudFileSystem(opts *FileSystemCraeteOptions) (ICloudFileSystem, error)
+
+	GetICloudAccessGroups() ([]ICloudAccessGroup, error)
+	CreateICloudAccessGroup(opts *SAccessGroup) (ICloudAccessGroup, error)
+	GetICloudAccessGroupById(id string) (ICloudAccessGroup, error)
+
+	GetICloudWafIPSets() ([]ICloudWafIPSet, error)
+	GetICloudWafRegexSets() ([]ICloudWafRegexSet, error)
+	GetICloudWafInstances() ([]ICloudWafInstance, error)
+	GetICloudWafInstanceById(id string) (ICloudWafInstance, error)
+	CreateICloudWafInstance(opts *WafCreateOptions) (ICloudWafInstance, error)
+	GetICloudWafRuleGroups() ([]ICloudWafRuleGroup, error)
+
+	GetICloudMongoDBs() ([]ICloudMongoDB, error)
+	GetICloudMongoDBById(id string) (ICloudMongoDB, error)
+
+	GetIElasticSearchs() ([]ICloudElasticSearch, error)
+	GetIElasticSearchById(id string) (ICloudElasticSearch, error)
+
+	GetICloudKafkas() ([]ICloudKafka, error)
+	GetICloudKafkaById(id string) (ICloudKafka, error)
+
+	GetICloudApps() ([]ICloudApp, error)
+	GetICloudAppById(id string) (ICloudApp, error)
 }
 
 type ICloudZone interface {
 	ICloudResource
+	ICloudI18nResource
 
 	GetIRegion() ICloudRegion
 
@@ -156,15 +205,15 @@ type ICloudZone interface {
 }
 
 type ICloudImage interface {
-	ICloudResource
+	IVirtualResource
 
 	Delete(ctx context.Context) error
 	GetIStoragecache() ICloudStoragecache
 
 	GetSizeByte() int64
-	GetImageType() string
+	GetImageType() TImageType
 	GetImageStatus() string
-	GetOsType() string
+	GetOsType() TOsType
 	GetOsDist() string
 	GetOsVersion() string
 	GetOsArch() string
@@ -172,12 +221,18 @@ type ICloudImage interface {
 	GetMinRamSizeMb() int
 	GetImageFormat() string
 	GetCreatedAt() time.Time
+	UEFI() bool
+	GetPublicScope() rbacutils.TRbacScope
+	GetSubImages() []SSubImage
 }
 
 type ICloudStoragecache interface {
 	ICloudResource
 
-	GetIImages() ([]ICloudImage, error)
+	// 私有云需要实现
+	GetICloudImages() ([]ICloudImage, error)
+	// 公有云需要实现
+	GetICustomizedCloudImages() ([]ICloudImage, error)
 	GetIImageById(extId string) (ICloudImage, error)
 
 	GetPath() string
@@ -200,16 +255,19 @@ type ICloudStorage interface {
 	GetStorageType() string
 	GetMediumType() string
 	GetCapacityMB() int64 // MB
+	GetCapacityUsedMB() int64
 	GetStorageConf() jsonutils.JSONObject
 	GetEnabled() bool
 
-	CreateIDisk(name string, sizeGb int, desc string) (ICloudDisk, error)
+	CreateIDisk(conf *DiskCreateConfig) (ICloudDisk, error)
 
 	GetIDiskById(idStr string) (ICloudDisk, error)
 
 	GetMountPoint() string
 
 	IsSysDiskStore() bool
+
+	DisableSync() bool
 }
 
 type ICloudHost interface {
@@ -246,6 +304,10 @@ type ICloudHost interface {
 
 	CreateVM(desc *SManagedVMCreateConfig) (ICloudVM, error)
 	GetIHostNics() ([]ICloudHostNetInterface, error)
+
+	GetSchedtags() ([]string, error)
+
+	GetOvnVersion() string // just for cloudpods host
 }
 
 type ICloudVM interface {
@@ -272,7 +334,8 @@ type ICloudVM interface {
 	GetBootOrder() string
 	GetVga() string
 	GetVdi() string
-	GetOSType() string
+	GetOSArch() string
+	GetOsType() TOsType
 	GetOSName() string
 	GetBios() string
 	GetMachine() string
@@ -287,7 +350,7 @@ type ICloudVM interface {
 	// GetSecurityGroup() ICloudSecurityGroup
 
 	StartVM(ctx context.Context) error
-	StopVM(ctx context.Context, isForce bool) error
+	StopVM(ctx context.Context, opts *ServerStopOptions) error
 	DeleteVM(ctx context.Context) error
 
 	UpdateVM(ctx context.Context, name string) error
@@ -306,18 +369,62 @@ type ICloudVM interface {
 
 	CreateDisk(ctx context.Context, sizeMb int, uuid string, driver string) error
 
-	Renew(bc billing.SBillingCycle) error
+	MigrateVM(hostid string) error
+	LiveMigrateVM(hostid string) error
 
 	GetError() error
+
+	CreateInstanceSnapshot(ctx context.Context, name string, desc string) (ICloudInstanceSnapshot, error)
+	GetInstanceSnapshot(idStr string) (ICloudInstanceSnapshot, error)
+	GetInstanceSnapshots() ([]ICloudInstanceSnapshot, error)
+	ResetToInstanceSnapshot(ctx context.Context, idStr string) error
+
+	SaveImage(opts *SaveImageOptions) (ICloudImage, error)
+
+	AllocatePublicIpAddress() (string, error)
 }
 
 type ICloudNic interface {
+	GetId() string
 	GetIP() string
 	GetMAC() string
 	InClassicNetwork() bool
 	GetDriver() string
 	GetINetwork() ICloudNetwork
+
+	// GetSubAddress returns non-primary/secondary/alias ipv4 addresses of
+	// the network interface
+	//
+	// Implement it when any AssignXx ops methods are implemented
+	GetSubAddress() ([]string, error)
+	AssignNAddress(count int) ([]string, error)
+	AssignAddress(ipAddrs []string) error
+	// UnassignAddress should not return error if the network interface is
+	// now not present, or the addresses is not assigned to the network
+	// interface in the first place
+	UnassignAddress(ipAddrs []string) error
 }
+
+const ErrAddressCountExceed = errors.Error("ErrAddressCountExceed")
+
+type DummyICloudNic struct{}
+
+var _ ICloudNic = DummyICloudNic{}
+
+func (d DummyICloudNic) GetId() string              { panic(errors.ErrNotImplemented) }
+func (d DummyICloudNic) GetIP() string              { panic(errors.ErrNotImplemented) }
+func (d DummyICloudNic) GetMAC() string             { panic(errors.ErrNotImplemented) }
+func (d DummyICloudNic) InClassicNetwork() bool     { panic(errors.ErrNotImplemented) }
+func (d DummyICloudNic) GetDriver() string          { panic(errors.ErrNotImplemented) }
+func (d DummyICloudNic) GetINetwork() ICloudNetwork { panic(errors.ErrNotImplemented) }
+func (d DummyICloudNic) GetSubAddress() ([]string, error) {
+	return nil, nil
+}
+func (d DummyICloudNic) AssignNAddress(count int) ([]string, error) {
+	return nil, errors.ErrNotImplemented
+}
+func (d DummyICloudNic) AssignAddress(ipAddrs []string) error   { return errors.ErrNotImplemented }
+func (d DummyICloudNic) UnassignAddress(ipAddrs []string) error { return errors.ErrNotImplemented }
 
 type ICloudEIP interface {
 	IBillingResource
@@ -342,27 +449,34 @@ type ICloudEIP interface {
 }
 
 type ICloudSecurityGroup interface {
-	ICloudResource
+	IVirtualResource
 
 	GetDescription() string
-	GetRules() ([]secrules.SecurityRule, error)
+	GetRules() ([]SecurityRule, error)
 	GetVpcId() string
 
-	SyncRules(rules []secrules.SecurityRule) error
+	SyncRules(common, inAdds, outAdds, inDels, outDels []SecurityRule) error
+	GetReferences() ([]SecurityGroupReference, error)
 	Delete() error
 }
 
 type ICloudRouteTable interface {
 	ICloudResource
 
+	GetAssociations() []RouteTableAssociation
 	GetDescription() string
 	GetRegionId() string
 	GetVpcId() string
-	GetType() string
+	GetType() RouteTableType
 	GetIRoutes() ([]ICloudRoute, error)
+
+	CreateRoute(route RouteSet) error
+	UpdateRoute(route RouteSet) error
+	RemoveRoute(route RouteSet) error
 }
 
 type ICloudRoute interface {
+	ICloudResource
 	GetType() string
 	GetCidr() string
 	GetNextHopType() string
@@ -394,7 +508,6 @@ type ICloudDisk interface {
 	Delete(ctx context.Context) error
 
 	CreateISnapshot(ctx context.Context, name string, desc string) (ICloudSnapshot, error)
-	GetISnapshot(idStr string) (ICloudSnapshot, error)
 	GetISnapshots() ([]ICloudSnapshot, error)
 
 	GetExtSnapshotPolicyIds() ([]string, error)
@@ -414,6 +527,13 @@ type ICloudSnapshot interface {
 	Delete() error
 }
 
+type ICloudInstanceSnapshot interface {
+	IVirtualResource
+
+	GetDescription() string
+	Delete() error
+}
+
 type ICloudSnapshotPolicy interface {
 	IVirtualResource
 
@@ -427,18 +547,38 @@ type ICloudVpc interface {
 	// GetGlobalId() // 若vpc属于globalvpc,此函数返回格式必须是 'region.GetGlobalId()/vpc.GetGlobalId()'
 	ICloudResource
 
+	IsSupportSetExternalAccess() bool // 是否支持Attach互联网网关.
+	GetExternalAccessMode() string
+	AttachInternetGateway(igwId string) error
+
 	GetRegion() ICloudRegion
 	GetIsDefault() bool
 	GetCidrBlock() string
-	// GetStatus() string
 	GetIWires() ([]ICloudWire, error)
+	CreateIWire(opts *SWireCreateOptions) (ICloudWire, error)
 	GetISecurityGroups() ([]ICloudSecurityGroup, error)
 	GetIRouteTables() ([]ICloudRouteTable, error)
+	GetIRouteTableById(routeTableId string) (ICloudRouteTable, error)
 
 	Delete() error
 
 	GetIWireById(wireId string) (ICloudWire, error)
 	GetINatGateways() ([]ICloudNatGateway, error)
+	CreateINatGateway(opts *NatGatewayCreateOptions) (ICloudNatGateway, error)
+
+	GetICloudVpcPeeringConnections() ([]ICloudVpcPeeringConnection, error)
+	GetICloudAccepterVpcPeeringConnections() ([]ICloudVpcPeeringConnection, error)
+	GetICloudVpcPeeringConnectionById(id string) (ICloudVpcPeeringConnection, error)
+	CreateICloudVpcPeeringConnection(opts *VpcPeeringConnectionCreateOptions) (ICloudVpcPeeringConnection, error)
+	AcceptICloudVpcPeeringConnection(id string) error
+
+	GetAuthorityOwnerId() string
+
+	ProposeJoinICloudInterVpcNetwork(opts *SVpcJointInterVpcNetworkOption) error
+}
+
+type ICloudInternetGateway interface {
+	ICloudResource
 }
 
 type ICloudWire interface {
@@ -450,7 +590,7 @@ type ICloudWire interface {
 
 	GetINetworkById(netid string) (ICloudNetwork, error)
 
-	CreateINetwork(name string, cidr string, desc string) (ICloudNetwork, error)
+	CreateINetwork(opts *SNetworkCreateOptions) (ICloudNetwork, error)
 }
 
 type ICloudNetwork interface {
@@ -463,8 +603,11 @@ type ICloudNetwork interface {
 	GetIpMask() int8
 	GetGateway() string
 	GetServerType() string
-	// GetIsPublic() bool
-	// GetPublicScope() rbacutils.TRbacScope
+	//GetIsPublic() bool
+	// 仅私有云有用，公有云无效
+	// 1. scope = none 非共享, network仅会属于一个项目,并且私有
+	// 2. scope = system 系统共享 云账号共享会跟随云账号共享，云账号非共享,会共享到network所在域
+	GetPublicScope() rbacutils.TRbacScope
 
 	Delete() error
 
@@ -480,6 +623,7 @@ type ICloudHostNetInterface interface {
 	GetIpAddr() string
 	GetMtu() int32
 	GetNicType() string
+	GetBridge() string
 }
 
 type ICloudLoadbalancer interface {
@@ -491,6 +635,7 @@ type ICloudLoadbalancer interface {
 	GetNetworkIds() []string
 	GetVpcId() string
 	GetZoneId() string
+	GetZone1Id() string // first slave zone
 	GetLoadbalancerSpec() string
 	GetChargeType() string
 	GetEgressMbps() int
@@ -512,6 +657,31 @@ type ICloudLoadbalancer interface {
 	GetILoadBalancerListenerById(listenerId string) (ICloudLoadbalancerListener, error)
 }
 
+type ICloudLoadbalancerRedirect interface {
+	GetRedirect() string
+	GetRedirectCode() int64
+	GetRedirectScheme() string
+	GetRedirectHost() string
+	GetRedirectPath() string
+}
+
+type ICloudloadbalancerHealthCheck interface {
+	GetHealthCheck() string
+	GetHealthCheckType() string
+	GetHealthCheckTimeout() int
+	GetHealthCheckInterval() int
+	GetHealthCheckRise() int
+	GetHealthCheckFail() int
+
+	GetHealthCheckReq() string
+	GetHealthCheckExp() string
+
+	// HTTP && HTTPS
+	GetHealthCheckDomain() string
+	GetHealthCheckURI() string
+	GetHealthCheckCode() string
+}
+
 type ICloudLoadbalancerListener interface {
 	IVirtualResource
 
@@ -523,24 +693,13 @@ type ICloudLoadbalancerListener interface {
 	GetAclId() string
 
 	GetEgressMbps() int
-
-	GetHealthCheck() string
-	GetHealthCheckType() string
-	GetHealthCheckTimeout() int
-	GetHealthCheckInterval() int
-	GetHealthCheckRise() int
-	GetHealthCheckFail() int
-
-	GetHealthCheckReq() string
-	GetHealthCheckExp() string
-
 	GetBackendGroupId() string
 	GetBackendServerPort() int
 
+	GetClientIdleTimeout() int
+	GetBackendConnectTimeout() int
+
 	// HTTP && HTTPS
-	GetHealthCheckDomain() string
-	GetHealthCheckURI() string
-	GetHealthCheckCode() string
 	CreateILoadBalancerListenerRule(rule *SLoadbalancerListenerRule) (ICloudLoadbalancerListenerRule, error)
 	GetILoadBalancerListenerRuleById(ruleId string) (ICloudLoadbalancerListenerRule, error)
 	GetILoadbalancerListenerRules() ([]ICloudLoadbalancerListenerRule, error)
@@ -556,6 +715,10 @@ type ICloudLoadbalancerListener interface {
 	GetTLSCipherPolicy() string
 	HTTP2Enabled() bool
 
+	// http redirect
+	ICloudLoadbalancerRedirect
+	ICloudloadbalancerHealthCheck
+
 	Start() error
 	Stop() error
 	Sync(ctx context.Context, listener *SLoadbalancerListener) error
@@ -565,6 +728,8 @@ type ICloudLoadbalancerListener interface {
 
 type ICloudLoadbalancerListenerRule interface {
 	IVirtualResource
+	// http redirect
+	ICloudLoadbalancerRedirect
 
 	IsDefault() bool
 	GetDomain() string
@@ -602,6 +767,7 @@ type ICloudLoadbalancerBackend interface {
 	GetBackendType() string
 	GetBackendRole() string
 	GetBackendId() string
+	GetIpAddress() string // backend type is ip
 	SyncConf(ctx context.Context, port, weight int) error
 }
 
@@ -637,6 +803,7 @@ type ICloudSku interface {
 	GetPrepaidStatus() string
 	GetPostpaidStatus() string
 
+	GetCpuArch() string
 	GetCpuCoreCount() int
 	GetMemorySizeMB() int
 
@@ -686,6 +853,12 @@ type ICloudNatGateway interface {
 	// Read the description of these two structures before using.
 	CreateINatDEntry(rule SNatDRule) (ICloudNatDEntry, error)
 	CreateINatSEntry(rule SNatSRule) (ICloudNatSEntry, error)
+
+	GetINetworkId() string
+	GetBandwidthMb() int
+	GetIpAddr() string
+
+	Delete() error
 }
 
 // ICloudNatDEntry describe a DNat rule which transfer externalIp:externalPort to
@@ -739,7 +912,8 @@ type ICloudDBInstance interface {
 	Reboot() error
 
 	GetMasterInstanceId() string
-	GetSecurityGroupId() string
+	GetSecurityGroupIds() ([]string, error)
+	SetSecurityGroups(ids []string) error
 	GetPort() int
 	GetEngine() string
 	GetEngineVersion() string
@@ -757,17 +931,18 @@ type ICloudDBInstance interface {
 
 	GetConnectionStr() string
 	GetInternalConnectionStr() string
-	GetIZoneId() string
+	GetZone1Id() string
+	GetZone2Id() string
+	GetZone3Id() string
 	GetIVpcId() string
 
-	GetDBNetwork() (*SDBInstanceNetwork, error)
+	GetDBNetworks() ([]SDBInstanceNetwork, error)
 	GetIDBInstanceParameters() ([]ICloudDBInstanceParameter, error)
 	GetIDBInstanceDatabases() ([]ICloudDBInstanceDatabase, error)
 	GetIDBInstanceAccounts() ([]ICloudDBInstanceAccount, error)
 	GetIDBInstanceBackups() ([]ICloudDBInstanceBackup, error)
 
 	ChangeConfig(ctx context.Context, config *SManagedDBInstanceChangeConfig) error
-	Renew(bc billing.SBillingCycle) error
 
 	OpenPublicConnection() error
 	ClosePublicConnection() error
@@ -800,6 +975,9 @@ type ICloudDBInstanceBackup interface {
 	GetBackupSizeMb() int
 	GetDBNames() string
 	GetBackupMode() string
+	GetBackupMethod() TBackupMethod
+
+	CreateICloudDBInstance(opts *SManagedDBInstanceCreateConfig) (ICloudDBInstance, error)
 
 	Delete() error
 }
@@ -813,7 +991,9 @@ type ICloudDBInstanceDatabase interface {
 }
 
 type ICloudDBInstanceAccount interface {
-	ICloudResource
+	GetName() string
+	GetStatus() string
+	GetHost() string
 
 	GetIDBInstanceAccountPrivileges() ([]ICloudDBInstanceAccountPrivilege, error)
 
@@ -858,6 +1038,7 @@ type ICloudElasticcache interface {
 	GetMaintainEndTime() string
 
 	GetAuthMode() string
+	GetSecurityGroupIds() ([]string, error)
 
 	GetICloudElasticcacheAccounts() ([]ICloudElasticcacheAccount, error)
 	GetICloudElasticcacheAcls() ([]ICloudElasticcacheAcl, error)
@@ -877,11 +1058,13 @@ type ICloudElasticcache interface {
 
 	CreateAccount(account SCloudElasticCacheAccountInput) (ICloudElasticcacheAccount, error)
 	CreateAcl(aclName, securityIps string) (ICloudElasticcacheAcl, error)
-	CreateBackup() (ICloudElasticcacheBackup, error)
-	FlushInstance() error
-	UpdateAuthMode(noPasswordAccess bool) error
+	CreateBackup(desc string) (ICloudElasticcacheBackup, error)
+	FlushInstance(input SCloudElasticCacheFlushInstanceInput) error
+	UpdateAuthMode(noPasswordAccess bool, password string) error
 	UpdateInstanceParameters(config jsonutils.JSONObject) error
 	UpdateBackupPolicy(config SCloudElasticCacheBackupPolicyUpdateInput) error
+
+	UpdateSecurityGroups(secgroupIds []string) error
 }
 
 type ICloudElasticcacheAccount interface {
@@ -951,10 +1134,377 @@ type ICloudQuota interface {
 	GetCurrentQuotaUsedCount() int
 }
 
-type ICloudPolicyDefinition interface {
+// 公有云子账号
+type IClouduser interface {
 	GetGlobalId() string
 	GetName() string
+
+	GetEmailAddr() string
+	GetInviteUrl() string
+
+	GetICloudgroups() ([]ICloudgroup, error)
+
+	GetISystemCloudpolicies() ([]ICloudpolicy, error)
+	GetICustomCloudpolicies() ([]ICloudpolicy, error)
+
+	AttachSystemPolicy(policyName string) error
+	DetachSystemPolicy(policyName string) error
+
+	AttachCustomPolicy(policyName string) error
+	DetachCustomPolicy(policyName string) error
+
+	Delete() error
+
+	ResetPassword(password string) error
+	IsConsoleLogin() bool
+}
+
+// 公有云子账号权限
+type ICloudpolicy interface {
+	GetGlobalId() string
+	GetName() string
+	GetDescription() string
+
+	GetDocument() (*jsonutils.JSONDict, error)
+	UpdateDocument(*jsonutils.JSONDict) error
+
+	Delete() error
+}
+
+// 公有云用户组
+type ICloudgroup interface {
+	GetGlobalId() string
+	GetName() string
+	GetDescription() string
+	GetISystemCloudpolicies() ([]ICloudpolicy, error)
+	GetICustomCloudpolicies() ([]ICloudpolicy, error)
+	GetICloudusers() ([]IClouduser, error)
+
+	AddUser(name string) error
+	RemoveUser(name string) error
+
+	AttachSystemPolicy(policyName string) error
+	DetachSystemPolicy(policyName string) error
+
+	AttachCustomPolicy(policyName string) error
+	DetachCustomPolicy(policyName string) error
+
+	Delete() error
+}
+
+type ICloudDnsZone interface {
+	ICloudResource
+
+	GetZoneType() TDnsZoneType
+	GetOptions() *jsonutils.JSONDict
+
+	GetICloudVpcIds() ([]string, error)
+	AddVpc(*SPrivateZoneVpc) error
+	RemoveVpc(*SPrivateZoneVpc) error
+
+	GetIDnsRecordSets() ([]ICloudDnsRecordSet, error)
+	SyncDnsRecordSets(common, add, del, update []DnsRecordSet) error
+
+	Delete() error
+
+	GetDnsProductType() TDnsProductType
+}
+
+type ICloudDnsRecordSet interface {
+	GetGlobalId() string
+
+	GetDnsName() string
+	GetStatus() string
+	GetEnabled() bool
+	GetDnsType() TDnsType
+	GetDnsValue() string
+	GetTTL() int64
+	GetMxPriority() int64
+
+	GetPolicyType() TDnsPolicyType
+	GetPolicyValue() TDnsPolicyValue
+	GetPolicyOptions() *jsonutils.JSONDict
+}
+
+type ICloudVpcPeeringConnection interface {
+	ICloudResource
+
+	GetPeerVpcId() string
+	GetPeerAccountId() string
+	GetEnabled() bool
+	Delete() error
+}
+
+type ICloudSAMLProvider interface {
+	ICloudResource
+
+	GetMetadataDocument() (*samlutils.EntityDescriptor, error)
+	UpdateMetadata(samlutils.EntityDescriptor) error
+
+	GetAuthUrl() string
+	Delete() error
+}
+
+type ICloudrole interface {
+	GetGlobalId() string
+	GetName() string
+
+	GetDocument() *jsonutils.JSONDict
+	GetSAMLProvider() string
+
+	GetICloudpolicies() ([]ICloudpolicy, error)
+	AttachPolicy(id string) error
+	DetachPolicy(id string) error
+
+	Delete() error
+}
+
+type ICloudInterVpcNetwork interface {
+	ICloudResource
+	GetAuthorityOwnerId() string
+	GetICloudVpcIds() ([]string, error)
+	AttachVpc(opts *SInterVpcNetworkAttachVpcOption) error
+	DetachVpc(opts *SInterVpcNetworkDetachVpcOption) error
+	Delete() error
+	GetIRoutes() ([]ICloudInterVpcNetworkRoute, error)
+	EnableRouteEntry(routeId string) error
+	DisableRouteEntry(routeId string) error
+}
+
+type ICloudInterVpcNetworkRoute interface {
+	ICloudResource
+	GetInstanceId() string
+	GetInstanceType() string
+	GetInstanceRegionId() string
+
+	GetEnabled() bool
+	GetCidr() string
+}
+
+type ICloudFileSystem interface {
+	ICloudResource
+	IBillingResource
+
+	GetFileSystemType() string
+	GetStorageType() string
+	GetProtocol() string
+	GetCapacityGb() int64
+	GetUsedCapacityGb() int64
+	GetMountTargetCountLimit() int
+
+	GetZoneId() string
+
+	GetMountTargets() ([]ICloudMountTarget, error)
+	CreateMountTarget(opts *SMountTargetCreateOptions) (ICloudMountTarget, error)
+
+	Delete() error
+}
+
+type ICloudMountTarget interface {
+	GetGlobalId() string
+	GetName() string
+	GetAccessGroupId() string
+	GetDomainName() string
+	GetNetworkType() string
+	GetVpcId() string
+	GetNetworkId() string
+	GetStatus() string
+
+	Delete() error
+}
+
+type ICloudAccessGroup interface {
+	GetGlobalId() string
+	GetName() string
+	GetDesc() string
+	IsDefault() bool
+	GetMaxPriority() int
+	GetMinPriority() int
+	GetSupporedUserAccessTypes() []TUserAccessType
+	GetNetworkType() string
+	GetFileSystemType() string
+	GetMountTargetCount() int
+
+	GetRules() ([]AccessGroupRule, error)
+	SyncRules(common, added, removed AccessGroupRuleSet) error
+
+	Delete() error
+}
+
+type ICloudWafIPSet interface {
+	GetName() string
+	GetDesc() string
+	GetType() TWafType
+	GetGlobalId() string
+	GetAddresses() WafAddresses
+
+	Delete() error
+}
+
+type ICloudWafRegexSet interface {
+	GetName() string
+	GetDesc() string
+	GetType() TWafType
+	GetGlobalId() string
+	GetRegexPatterns() WafRegexPatterns
+
+	Delete() error
+}
+
+type ICloudWafInstance interface {
+	ICloudEnabledResource
+
+	GetWafType() TWafType
+	GetDefaultAction() *DefaultAction
+	GetRules() ([]ICloudWafRule, error)
+	AddRule(opts *SWafRule) (ICloudWafRule, error)
+
+	// 绑定的资源列表
+	GetCloudResources() ([]SCloudResource, error)
+
+	Delete() error
+}
+
+type ICloudWafRuleGroup interface {
+	GetName() string
+	GetDesc() string
+	GetGlobalId() string
+	GetWafType() TWafType
+	GetRules() ([]ICloudWafRule, error)
+}
+
+type ICloudWafRule interface {
+	GetName() string
+	GetDesc() string
+	GetGlobalId() string
+	GetPriority() int
+	GetAction() *DefaultAction
+	GetStatementCondition() TWafStatementCondition
+	GetStatements() ([]SWafStatement, error)
+
+	Update(opts *SWafRule) error
+	Delete() error
+}
+
+type ICloudMongoDB interface {
+	IVirtualResource
+	IBillingResource
+
+	GetVpcId() string
+	GetNetworkId() string
+	GetIpAddr() string
+	GetVcpuCount() int
+	GetVmemSizeMb() int
+	GetDiskSizeMb() int
+	GetZoneId() string
+	GetReplicationNum() int
 	GetCategory() string
-	GetCondition() string
-	GetParameters() *jsonutils.JSONDict
+	GetEngine() string
+	GetEngineVersion() string
+	GetInstanceType() string
+	GetMaintainTime() string
+	GetPort() int
+
+	GetIBackups() ([]SMongoDBBackup, error)
+
+	Delete() error
+}
+
+type ICloudElasticSearch interface {
+	IVirtualResource
+	IBillingResource
+
+	GetVersion() string
+	GetStorageType() string
+	GetDiskSizeGb() int
+	GetCategory() string
+
+	GetInstanceType() string
+	GetVcpuCount() int
+	GetVmemSizeGb() int
+
+	GetVpcId() string
+	GetNetworkId() string
+	GetZoneId() string
+	IsMultiAz() bool
+
+	Delete() error
+}
+
+type ICloudKafka interface {
+	IVirtualResource
+	IBillingResource
+
+	GetNetworkId() string
+	GetVpcId() string
+	GetZoneId() string
+	GetInstanceType() string
+
+	GetVersion() string
+	GetDiskSizeGb() int
+	GetStorageType() string
+	GetBandwidthMb() int
+	GetEndpoint() string
+	GetMsgRetentionMinute() int
+
+	IsMultiAz() bool
+
+	GetTopics() ([]SKafkaTopic, error)
+
+	Delete() error
+}
+
+type ICloudApp interface {
+	IVirtualResource
+	GetEnvironments() ([]ICloudAppEnvironment, error)
+	GetTechStack() string
+	GetType() string
+	GetKind() string
+	GetOsType() TOsType
+}
+
+type ICloudAppEnvironment interface {
+	IVirtualResource
+	GetInstanceType() (string, error)
+	GetInstanceNumber() (int, error)
+}
+
+type ICloudDBInstanceSku interface {
+	GetName() string
+	GetGlobalId() string
+	GetStatus() string
+	GetEngine() string
+	GetEngineVersion() string
+	GetStorageType() string
+	GetDiskSizeStep() int
+	GetMaxDiskSizeGb() int
+	GetMinDiskSizeGb() int
+	GetIOPS() int
+	GetTPS() int
+	GetQPS() int
+	GetMaxConnections() int
+	GetVcpuCount() int
+	GetVmemSizeMb() int
+	GetCategory() string
+	GetZone1Id() string
+	GetZone2Id() string
+	GetZone3Id() string
+	GetZoneId() string
+}
+
+type ICloudNatSku interface {
+	GetName() string
+	GetDesc() string
+	GetGlobalId() string
+	GetPrepaidStatus() string
+	GetPostpaidStatus() string
+}
+
+type ICloudCDNDomain interface {
+	ICloudEnabledResource
+
+	GetArea() string
+	GetServiceType() string
+
+	Delete() error
 }

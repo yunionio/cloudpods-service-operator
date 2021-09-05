@@ -64,7 +64,7 @@ var SKU_FAMILIES = []string{
 }
 
 type ServerSkuListInput struct {
-	apis.StatusStandaloneResourceListInput
+	apis.EnabledStatusStandaloneResourceListInput
 	apis.DomainizedResourceListInput
 
 	ManagedResourceListInput
@@ -74,9 +74,15 @@ type ServerSkuListInput struct {
 	UsableResourceListInput
 
 	// filter sku by memory size in MB
-	MemorySizeMb int `json:"memory_size_mb"`
+	MemorySizeMb []int `json:"memory_size_mb"`
 	// filter sku by CPU core count
 	CpuCoreCount []int `json:"cpu_core_count"`
+
+	// 后付费状态
+	PostpaidStatus string `json:"postpaid_status"`
+
+	// 预付费状态
+	PrepaidStatus string `json:"prepaid_status"`
 }
 
 type ElasticcacheSkuListInput struct {
@@ -148,4 +154,29 @@ type DBInstanceSkuListInput struct {
 	Zone1 []string `json:"zone1"`
 	Zone2 []string `json:"zone2"`
 	Zone3 []string `json:"zone3"`
+}
+
+type SkuSyncInput struct {
+	// 云平台名称
+	// example: Google
+	Provider string `json:"provider,omitempty"`
+
+	// 区域ID
+	CloudregionIds []string `json:"cloudregion_ids"`
+}
+
+type SkuTaskQueryInput struct {
+	// 异步任务ID
+	TaskIds []string `json:"task_ids"`
+}
+
+type CloudregionSkuSyncInput struct {
+	SkuSyncInput
+
+	// 同步资源类型
+	// choices: serversku|elasticcachesku|dbinstance_sku
+	Resource string `json:"resource"`
+}
+
+type SyncImagesInput struct {
 }

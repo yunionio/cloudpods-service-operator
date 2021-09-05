@@ -112,7 +112,7 @@ func (this *BaseManager) rawBaseUrlRequest(s *mcclient.ClientSession,
 }
 
 type ListResult struct {
-	Data   []jsonutils.JSONObject
+	Data   []jsonutils.JSONObject `json:"data,allowempty"`
 	Total  int
 	Limit  int
 	Offset int
@@ -300,6 +300,20 @@ func BatchDo(ids []string, do func(id string) (jsonutils.JSONObject, error)) []S
 			r, e := do(id)
 			addResult(results, id, r, e)
 		}(ids[i])
+	}
+	return waitResults(results, len(ids))
+}
+
+func BatchParamsDo(
+	ids []string, params []jsonutils.JSONObject,
+	do func(id string, param jsonutils.JSONObject) (jsonutils.JSONObject, error),
+) []SubmitResult {
+	results := make(chan SubmitResult, len(ids))
+	for i := 0; i < len(ids); i++ {
+		go func(id string, param jsonutils.JSONObject) {
+			r, e := do(id, param)
+			addResult(results, id, r, e)
+		}(ids[i], params[i])
 	}
 	return waitResults(results, len(ids))
 }

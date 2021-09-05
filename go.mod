@@ -8,14 +8,14 @@ require (
 	github.com/mcuadros/go-lookup v0.0.0-20200330054200-b4062b0c4c85
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	k8s.io/apiextensions-apiserver v0.17.2
-	k8s.io/apimachinery v0.17.3
+	gopkg.in/inf.v0 v0.9.1 // indirect
+	k8s.io/apimachinery v0.19.3
 	k8s.io/client-go v9.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.5.0
-	yunion.io/x/jsonutils v0.0.0-20200415132054-2bf8a5e94501
-	yunion.io/x/onecloud v0.0.0-20200427025506-7f96ad48447f
-	yunion.io/x/pkg v0.0.0-20200416145704-22c189971435
-	yunion.io/x/structarg v0.0.0-20200423163001-168d0687be7e
+	yunion.io/x/jsonutils v0.0.0-20210709075951-798a67800349
+	yunion.io/x/onecloud v0.0.0-20210905085923-e7ef470652cd
+	yunion.io/x/pkg v0.0.0-20210721081124-55078288ca4c
+	yunion.io/x/structarg v0.0.0-20200720093445-9f850fa222ce
 )
 
 replace (

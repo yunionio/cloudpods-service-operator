@@ -24,15 +24,20 @@ const (
 	HOST_TYPE_XEN        = "xen"     // # XenServer
 
 	HOST_TYPE_ALIYUN    = "aliyun"
+	HOST_TYPE_APSARA    = "apsara"
 	HOST_TYPE_AWS       = "aws"
 	HOST_TYPE_QCLOUD    = "qcloud"
 	HOST_TYPE_AZURE     = "azure"
 	HOST_TYPE_HUAWEI    = "huawei"
+	HOST_TYPE_HCSO      = "hcso"
 	HOST_TYPE_OPENSTACK = "openstack"
 	HOST_TYPE_UCLOUD    = "ucloud"
 	HOST_TYPE_ZSTACK    = "zstack"
 	HOST_TYPE_GOOGLE    = "google"
 	HOST_TYPE_CTYUN     = "ctyun"
+	HOST_TYPE_ECLOUD    = "ecloud"
+	HOST_TYPE_JDCLOUD   = "jdcloud"
+	HOST_TYPE_CLOUDPODS = "cloudpods"
 
 	HOST_TYPE_DEFAULT = HOST_TYPE_HYPERVISOR
 
@@ -102,15 +107,19 @@ var HOST_TYPES = []string{
 	HOST_TYPE_KUBELET,
 	HOST_TYPE_XEN,
 	HOST_TYPE_ALIYUN,
+	HOST_TYPE_APSARA,
 	HOST_TYPE_AZURE,
 	HOST_TYPE_AWS,
 	HOST_TYPE_QCLOUD,
 	HOST_TYPE_HUAWEI,
+	HOST_TYPE_HCSO,
 	HOST_TYPE_OPENSTACK,
 	HOST_TYPE_UCLOUD,
 	HOST_TYPE_ZSTACK,
 	HOST_TYPE_CTYUN,
 	HOST_TYPE_GOOGLE,
+	HOST_TYPE_JDCLOUD,
+	HOST_TYPE_CLOUDPODS,
 }
 
 var NIC_TYPES = []string{NIC_TYPE_IPMI, NIC_TYPE_ADMIN}
@@ -122,4 +131,10 @@ const (
 const (
 	BOOT_MODE_PXE = "pxe"
 	BOOT_MODE_ISO = "iso"
+)
+
+const (
+	HOST_HEALTH_PREFIX         = "/onecloud/kvm/host/health"
+	HOST_HEALTH_STATUS_RUNNING = "running"
+	HOST_HEALTH_LOCK_PREFIX    = "host-health"
 )

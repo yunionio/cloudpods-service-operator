@@ -53,12 +53,16 @@ type IsolatedDeviceListInput struct {
 
 	// 设备VENDOE编号
 	VendorDeviceId []string `json:"vendor_device_id"`
+
+	// 展示物理机的上的设备
+	ShowBaremetalIsolatedDevices bool `json:"show_baremetal_isolated_devices"`
 }
 
 type IsolatedDeviceCreateInput struct {
 	apis.StandaloneResourceCreateInput
 
 	HostResourceInput
+	IsolatedDeviceReservedResourceInput
 
 	// 设备类型USB/GPU
 	// example: GPU
@@ -74,4 +78,29 @@ type IsolatedDeviceCreateInput struct {
 
 	// 设备VendorId
 	VendorDeviceId string `json:"vendor_device_id"`
+}
+
+type IsolatedDeviceReservedResourceInput struct {
+	// GPU 预留内存
+	ReservedMemory *int `json:"reserved_memory"`
+
+	// GPU 预留CPU
+	ReservedCpu *int `json:"reserved_cpu"`
+
+	// GPU 预留磁盘
+	ReservedStorage *int `json:"reserved_storage"`
+}
+
+type IsolatedDeviceUpdateInput struct {
+	apis.StandaloneResourceBaseUpdateInput
+	IsolatedDeviceReservedResourceInput
+}
+
+type IsolatedDeviceJsonDesc struct {
+	Id             string `json:"id"`
+	DevType        string `json:"dev_type"`
+	Model          string `json:"model"`
+	Addr           string `json:"addr"`
+	VendorDeviceId string `json:"vendor_device_id"`
+	Vendor         string `json:"vendor"`
 }

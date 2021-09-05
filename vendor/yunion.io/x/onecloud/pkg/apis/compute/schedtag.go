@@ -21,13 +21,9 @@ type SchedtagShortDescDetails struct {
 	Default string `json:"default"`
 }
 
-type ScopedResourceCreateInput struct {
-	Scope string `json:"scope"`
-}
-
 type SchedtagCreateInput struct {
 	apis.StandaloneResourceCreateInput
-	ScopedResourceCreateInput
+	apis.ScopedResourceCreateInput
 
 	// 动态标签策略
 	// enum: exclude, prefer, avoid
@@ -41,11 +37,11 @@ type SchedtagCreateInput struct {
 
 type SchedtagResourceInput struct {
 	// 以关联的调度标签（ID或Name）过滤列表
-	Schedtag string `json:"schedtag"`
+	SchedtagId string `json:"schedtag_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by schedtag_id
-	SchedtagId string `json:"schedtag_id" "yunion:deprecated-by":"schedtag"`
+	Schedtag string `json:"schedtag" yunion-deprecated-by:"schedtag_id"`
 }
 
 type SchedtagFilterListInput struct {
@@ -63,13 +59,14 @@ type SchedtagFilterListInput struct {
 type SchedtagListInput struct {
 	apis.StandaloneResourceListInput
 	apis.ScopedResourceBaseListInput
+	CloudproviderResourceInput
 
 	// fitler by resource_type
-	ResourceType string `json:"resource_type"`
+	ResourceType []string `json:"resource_type"`
 	// swagger:ignore
 	// Deprecated
 	// filter by type, alias for resource_type
-	Type string `json:"type" "yunion:deprecated-by":"resource_type"`
+	Type string `json:"type" yunion-deprecated-by:"resource_type"`
 
 	DefaultStrategy []string `json:"default_strategy"`
 }
@@ -86,6 +83,7 @@ type SchedtagDetails struct {
 	HostCount        int    `json:"host_count"`
 	ServerCount      int    `json:"server_count"`
 	OtherCount       int    `json:"other_count"`
+	ResourceCount    int    `json:"resource_count"`
 	JoinModelKeyword string `json:"join_model_keyword"`
 }
 
@@ -111,4 +109,8 @@ type SchedtagJointResourceDetails struct {
 type SchedtagJointsListInput struct {
 	apis.JointResourceBaseListInput
 	SchedtagFilterListInput
+}
+
+type SchedtagSetResourceInput struct {
+	ResourceIds []string `json:"resource_ids"`
 }

@@ -18,6 +18,8 @@ import (
 	"time"
 )
 
+type TImageType string
+
 const (
 	IMAGE_STATUS_ACTIVE  = "active"
 	IMAGE_STATUS_QUEUED  = "queued"
@@ -25,10 +27,10 @@ const (
 	IMAGE_STATUS_KILLED  = "killed"
 	IMAGE_STATUS_DELETED = "deleted"
 
-	CachedImageTypeSystem     = "system"
-	CachedImageTypeCustomized = "customized"
-	CachedImageTypeShared     = "shared"
-	CachedImageTypeMarket     = "market"
+	ImageTypeSystem     = TImageType("system")
+	ImageTypeCustomized = TImageType("customized")
+	ImageTypeShared     = TImageType("shared")
+	ImageTypeMarket     = TImageType("market")
 )
 
 type SImage struct {
@@ -49,6 +51,23 @@ type SImage struct {
 	Status     string
 	// UpdatedAt       time.Time
 	PublicScope string
+	ExternalId  string
+
+	// SubImages record the subImages of the guest image.
+	// For normal image, it's nil.
+	SubImages []SSubImage
+}
+
+type SSubImage struct {
+	Index     int
+	MinDiskMB int
+	MinRamMb  int
+	SizeBytes int64
+}
+
+type SaveImageOptions struct {
+	Name  string
+	Notes string
 }
 
 func CloudImage2Image(image ICloudImage) SImage {
@@ -57,12 +76,12 @@ func CloudImage2Image(image ICloudImage) SImage {
 		Deleted:    false,
 		DiskFormat: image.GetImageFormat(),
 		Id:         image.GetId(),
-		IsPublic:   image.GetImageType() != CachedImageTypeCustomized,
+		IsPublic:   image.GetImageType() != ImageTypeCustomized,
 		MinDiskMB:  image.GetMinOsDiskSizeGb() * 1024,
 		MinRamMB:   image.GetMinRamSizeMb(),
 		Name:       image.GetName(),
 		Properties: map[string]string{
-			"os_type":         image.GetOsType(),
+			"os_type":         string(image.GetOsType()),
 			"os_distribution": image.GetOsDist(),
 			"os_version":      image.GetOsVersion(),
 			"os_arch":         image.GetOsArch(),
@@ -70,6 +89,7 @@ func CloudImage2Image(image ICloudImage) SImage {
 		Protected: true,
 		SizeBytes: image.GetSizeByte(),
 		Status:    image.GetImageStatus(),
+		SubImages: image.GetSubImages(),
 	}
 }
 

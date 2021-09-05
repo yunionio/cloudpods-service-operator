@@ -48,6 +48,7 @@ type DBInstanceAccountCreateInput struct {
 	// | ----		|-------					|
 	// | Aliyun		|MySQL, MariaBD, SQLServer	|
 	// | 华为云		|MySQL, MariaBD				|
+	// | 腾讯云		|MySQL      				|
 	// required: true
 	// 阿里云SQL Server 2017集群版不支持创建账号
 	// 实例状态必须是运行中
@@ -70,21 +71,28 @@ type SDBInstanceSetPrivilegesInput struct {
 
 type DBInstancePrivilege struct {
 	// 数据库名称
-	Database string
+	Database string `json:"database"`
 	// 账号名称
-	Account string
+	Account string `json:"account"`
 	// 数据库Id
-	DBInstancedatabaseId string
+	DBInstancedatabaseId string `json:"dbinstancedatabase_id"`
 	// 权限
-	Privileges string
+	Privileges string `json:"privileges"`
 }
 
 type DBInstanceAccountDetails struct {
 	apis.StatusStandaloneResourceDetails
+	apis.ProjectizedResourceInfo
 	DBInstanceResourceInfo
 
 	SDBInstanceAccount
 
 	// 账号权限列表
 	DBInstanceprivileges []DBInstancePrivilege `json:"dbinstanceprivileges,allowempty"`
+
+	ProjectId string `json:"tenant_id"`
+}
+
+type DBInstanceAccountUpdateInput struct {
+	apis.StatusStandaloneResourceBaseUpdateInput
 }
