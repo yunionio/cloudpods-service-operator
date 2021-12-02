@@ -5,6 +5,7 @@ FROM registry.cn-beijing.aliyuncs.com/yunionio/onecloud-base:v0.2
 RUN echo http://dl-cdn.alpinelinux.org/alpine/edge/testing >>/etc/apk/repositories
 RUN apk update && apk add kubectl && rm -rf /var/cache/apk/*
 
+ENV TZ UTC
 WORKDIR /
 COPY config/crd/bases/ /etc/crds/
 COPY _output/alpine-build/bin/manager .
