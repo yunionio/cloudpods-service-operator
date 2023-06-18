@@ -14,6 +14,8 @@
 
 package apis
 
+import "time"
+
 type ScopedResourceInput struct {
 	// 指定查询的权限范围，可能值为project, domain or system
 	Scope string `json:"scope"`
@@ -30,7 +32,10 @@ type DomainizedResourceListInput struct {
 	DomainizedResourceInput
 
 	// 对具有域属性的资源，严格匹配域ID
-	ProjectDomains []string `json:"project_domains"`
+	ProjectDomainIds []string `json:"project_domain_ids"`
+	// Deprecated
+	// swagger:ignore
+	ProjectDomains []string `json:"project_domains" yunion-deprecated-by:"project_domain_ids"`
 
 	// 按domain名称排序，可能值为asc|desc
 	// pattern: asc|desc
@@ -43,23 +48,45 @@ type ProjectizedResourceListInput struct {
 	ProjectizedResourceInput
 
 	// 对具有项目属性的资源，严格匹配项目ID
-	Projects []string `json:"projects"`
+	ProjectIds []string `json:"project_ids"`
+	// Deprecated
+	// swagger:ignore
+	Projects []string `json:"projects" yunion-deprecated-by:"project_ids"`
 
 	// 按project名称排序，可能值为asc|desc
 	// pattern: asc|desc
 	OrderByProject string `json:"order_by_project"`
 	// swagger:ignore
 	// Deprecated
-	OrderByTenant string `json:"order_by_tenant" "yunion:deprecated-by":"order_by_project"`
+	OrderByTenant string `json:"order_by_tenant" yunion-deprecated-by:"order_by_project"`
 }
 
-type UserResourceListInput struct {
+type StatusDomainLevelUserResourceListInput struct {
+	StatusDomainLevelResourceListInput
+
 	// 查询指定的用户（ID或名称）拥有的资源
-	User string `json:"user"`
+	UserId string `json:"user_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by userId
-	UserId string `json:"user_id" "yunion:deprecated-by":"user"`
+	User string `json:"user" yunion-deprecated-by:"user_id"`
+}
+
+type UserResourceListInput struct {
+	StandaloneResourceListInput
+	ScopedResourceInput
+
+	// swagger:ignore
+	// Is an admin call? equivalent to scope=system
+	// Deprecated
+	Admin *bool `json:"admin"`
+
+	// 查询指定的用户（ID或名称）拥有的资源
+	UserId string `json:"user_id"`
+	// swagger:ignore
+	// Deprecated
+	// Filter by userId
+	User string `json:"user" yunion-deprecated-by:"user_id"`
 }
 
 type ModelBaseListInput struct {
@@ -67,7 +94,7 @@ type ModelBaseListInput struct {
 
 	// 查询限制量
 	// default: 20
-	Limit *int `json:"limit"`
+	Limit *int `json:"limit" default:"20" help:"max items per page"`
 	// 查询偏移量
 	// default: 0
 	Offset *int `json:"offset"`
@@ -118,9 +145,13 @@ type ModelBaseListInput struct {
 	// 返回结果只包含指定的字段
 	Field []string `json:"field"`
 	// 用于数据导出，指定导出的数据字段
-	ExportKeys string `json:"export_keys"`
+	ExportKeys string `json:"export_keys" help:"Export field keys"`
 	// 返回结果携带delete_fail_reason和update_fail_reason字段
 	ShowFailReason *bool `json:"show_fail_reason"`
+}
+
+func (o ModelBaseListInput) GetExportKeys() string {
+	return o.ExportKeys
 }
 
 type IncrementalListInput struct {
@@ -163,27 +194,50 @@ type STag struct {
 	Value string
 }
 
-type StandaloneResourceListInput struct {
-	ResourceBaseListInput
-
-	// 通过标签过滤
+type MetadataResourceListInput struct {
+	// 通过标签过滤（包含这些标签）
 	Tags []STag `json:"tags"`
 
-	// 通过标签过滤
+	// 通过标签过滤（不包含这些标签）
+	NoTags []STag `json:"no_tags"`
+
+	// 通过标签排序
 	OrderByTag string `json:"order_by_tag"`
 
-	// 返回资源的标签不包含特定的用户标签
-	WithoutUserMeta bool `json:"without_user_meta"`
+	// deprecated
+	// 返回资源的标签不包含用户标签
+	WithoutUserMeta *bool `json:"without_user_meta"`
+
+	// 返回包含用户标签的资源
+	WithUserMeta *bool `json:"with_user_meta"`
+
+	// 返回包含外部标签的资源
+	WithCloudMeta *bool `json:"with_cloud_meta"`
+
+	// 返回包含任意标签的资源
+	WithAnyMeta *bool `json:"with_any_meta"`
+
 	// 返回列表数据中包含资源的标签数据（Metadata）
 	WithMeta *bool `json:"with_meta"`
+}
+
+type StandaloneAnonResourceListInput struct {
+	ResourceBaseListInput
+
+	MetadataResourceListInput
 
 	// 显示所有的资源，包括模拟的资源
-	ShowEmulated *bool `json:"show_emulated"`
+	ShowEmulated *bool `json:"show_emulated" help:"show emulated resources" negative:"do not show emulated resources"`
+
+	// 以资源ID过滤列表
+	Ids []string `json:"id" help:"filter by ids"`
+}
+
+type StandaloneResourceListInput struct {
+	StandaloneAnonResourceListInput
 
 	// 以资源名称过滤列表
-	Names []string `json:"name"`
-	// 以资源ID过滤列表
-	Ids []string `json:"id"`
+	Names []string `json:"name" help:"filter by names"`
 }
 
 type StatusResourceBaseListInput struct {
@@ -248,6 +302,8 @@ type DeletePreventableResourceBaseListInput struct {
 
 type ScopedResourceBaseListInput struct {
 	ProjectizedResourceListInput
+	// 指定匹配的范围，可能值为project, domain or system
+	BelongScope string `json:"belong_scope"`
 }
 
 type InfrasResourceBaseListInput struct {
@@ -263,4 +319,36 @@ type StatusInfrasResourceBaseListInput struct {
 type EnabledStatusInfrasResourceBaseListInput struct {
 	StatusInfrasResourceBaseListInput
 	EnabledResourceBaseListInput
+}
+
+type MultiArchResourceBaseListInput struct {
+	OsArch string `json:"os_arch"`
+}
+
+type AutoDeleteResourceBaseListInput struct {
+	AutoDelete *bool
+}
+
+type OpsLogListInput struct {
+	OwnerProjectIds []string `json:"owner_project_ids"`
+	OwnerDomainIds  []string `json:"owner_domain_ids"`
+
+	// filter by obj type
+	ObjTypes []string `json:"obj_type"`
+
+	// filter by obj name or obj id
+	Objs []string `json:"obj"`
+
+	// filter by obj ids
+	ObjIds []string `json:"obj_id"`
+
+	// filter by obj name
+	ObjNames []string `json:"obj_name"`
+
+	// filter by action
+	Actions []string `json:"action"`
+
+	Since time.Time `json:"since"`
+
+	Until time.Time `json:"until"`
 }

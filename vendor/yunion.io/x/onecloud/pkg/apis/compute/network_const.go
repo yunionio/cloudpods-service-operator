@@ -27,6 +27,7 @@ const (
 	NETWORK_TYPE_CONTAINER = "container"
 	NETWORK_TYPE_PXE       = "pxe"
 	NETWORK_TYPE_IPMI      = "ipmi"
+	NETWORK_TYPE_EIP       = "eip"
 
 	STATIC_ALLOC = "static"
 
@@ -53,13 +54,17 @@ var (
 		NETWORK_TYPE_CONTAINER,
 		NETWORK_TYPE_PXE,
 		NETWORK_TYPE_IPMI,
+		NETWORK_TYPE_EIP,
 	}
 
 	REGIONAL_NETWORK_PROVIDERS = []string{
 		CLOUD_PROVIDER_HUAWEI,
+		CLOUD_PROVIDER_HCSO,
 		CLOUD_PROVIDER_CTYUN,
 		CLOUD_PROVIDER_UCLOUD,
 		CLOUD_PROVIDER_GOOGLE,
+		CLOUD_PROVIDER_OPENSTACK,
+		CLOUD_PROVIDER_JDCLOUD,
 	}
 )
 
@@ -73,7 +78,7 @@ const (
 	IPAllocationDefault                        = ""
 )
 
-type SNetworkAddress struct {
+type SNetworkUsedAddress struct {
 	IpAddr        string
 	MacAddr       string
 	Owner         string

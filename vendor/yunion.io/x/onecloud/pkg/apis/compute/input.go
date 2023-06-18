@@ -37,12 +37,7 @@ type DeletePreventableCreateInput struct {
 }
 
 type KeypairListInput struct {
-	apis.StandaloneResourceListInput
-
 	apis.UserResourceListInput
-
-	// list in admin mode
-	Admin *bool `json:"admin"`
 
 	// 加密类型
 	// example: RSA
@@ -54,7 +49,7 @@ type KeypairListInput struct {
 }
 
 type CachedimageListInput struct {
-	apis.StandaloneResourceListInput
+	apis.SharableVirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
 
 	ManagedResourceListInput
@@ -63,11 +58,16 @@ type CachedimageListInput struct {
 	// 镜像类型，可能值为: system(公有云公共镜像), customized(自定义镜像)
 	// example: system
 	ImageType []string `json:"image_type"`
+
+	// filter by host schedtag
+	HostSchedtagId string `json:"host_schedtag_id"`
+
+	// valid cachedimage
+	Valid *bool `json:"valid"`
 }
 
 type ExternalProjectListInput struct {
-	apis.StandaloneResourceListInput
-	apis.ProjectizedResourceListInput
+	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
 
 	ManagedResourceListInput
@@ -147,10 +147,10 @@ type SchedpolicyListInput struct {
 
 type GuestTemplateFilterListInput struct {
 	// 主机镜像
-	GuestTemplate string `json:"guest_template"`
+	GuestTemplateId string `json:"guest_template_id"`
 	// swagger:ignore
 	// Deprecated
-	GuestTemplateId string `json:"guest_template_id" "yunion:deprecated-by":"guest_template"`
+	GuestTemplate string `json:"guest_template" yunion-deprecated-by:"guest_template_id"`
 }
 
 type ServiceCatalogListInput struct {

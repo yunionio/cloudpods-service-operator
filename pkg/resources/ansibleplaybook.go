@@ -82,7 +82,7 @@ func (an AnsiblePlaybook) create(ctx context.Context, hosts []AnsiblePlaybookHos
 	inv := ansiblev2.NewInventory(args...)
 	for i := range hosts {
 		host := an.apHosts(hosts[i])
-		inv.SetHost(hosts[i].VM.Name, host)
+		inv.SetHost(hosts[i].SshInfo.VMName, host)
 	}
 	params.Set("inventory", jsonutils.NewString(inv.String()))
 
@@ -151,22 +151,10 @@ func (an AnsiblePlaybook) Reconcile(ctx context.Context) (*onecloudv1.AnsiblePla
 }
 
 func (an AnsiblePlaybook) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
-	var ip string
-	switch {
-	case len(host.VM.Status.ExternalInfo.Eip) > 0:
-		ip = host.VM.Status.ExternalInfo.Eip
-	case len(host.VM.Status.ExternalInfo.Ips) > 0:
-		ip = host.VM.Status.ExternalInfo.Ips[0]
-	default:
-		// noway
-	}
-	user := "root"
-	if host.VM.Spec.VmConfig.Hypervisor != "kvm" {
-		user = "cloudroot"
-	}
 	vars := map[string]interface{}{
-		"ansible_user": user,
-		"ansible_host": ip,
+		"ansible_user": host.SshInfo.User,
+		"ansible_host": host.SshInfo.Host,
+		"ansible_port": host.SshInfo.Port,
 	}
 	for k, v := range host.Vars {
 		vars[k] = v
@@ -177,6 +165,7 @@ func (an AnsiblePlaybook) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
 }
 
 type AnsiblePlaybookHost struct {
-	VM   *onecloudv1.VirtualMachine
-	Vars map[string]interface{}
+	VM      *onecloudv1.VirtualMachine
+	Vars    map[string]interface{}
+	SshInfo *onecloudv1.DevtoolSshInfo
 }

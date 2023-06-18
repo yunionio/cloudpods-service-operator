@@ -51,6 +51,8 @@ type KeystoneServiceV2 struct {
 type KeystoneRoleV2 struct {
 	// 角色名称
 	Name string `json:"name"`
+	// 角色ID
+	Id string `json:"id"`
 }
 
 type KeystoneUserV2 struct {
@@ -168,6 +170,14 @@ func (token *TokenCredentialV2) GetRoles() []string {
 	return roles
 }
 
+func (token *TokenCredentialV2) GetRoleIds() []string {
+	roles := make([]string, 0)
+	for i := 0; i < len(token.User.Roles); i++ {
+		roles = append(roles, token.User.Roles[i].Id)
+	}
+	return roles
+}
+
 func (this *TokenCredentialV2) GetExpires() time.Time {
 	return this.Token.Expires
 }
@@ -217,15 +227,15 @@ func (this *TokenCredentialV2) GetServiceURLs(service, region, zone, endpointTyp
 	return this.ServiceCatalog.GetServiceURLs(service, region, zone, endpointType)
 }
 
-func (this *TokenCredentialV2) GetServicesByInterface(region string, infType string) []ExternalService {
-	return nil
-}
-
 func (this *TokenCredentialV2) GetInternalServices(region string) []string {
 	return nil
 }
 
 func (this *TokenCredentialV2) GetExternalServices(region string) []ExternalService {
+	return nil
+}
+
+func (this *TokenCredentialV2) GetServicesByInterface(region string, infType string) []ExternalService {
 	return nil
 }
 
@@ -331,6 +341,14 @@ func (catalog KeystoneServiceCatalogV2) GetServiceURLs(service, region, zone, en
 		return nil, err
 	}
 	return []string{url}, nil
+}
+
+func (catalog KeystoneServiceCatalogV2) GetInternalServices(region string) []string {
+	return nil
+}
+
+func (catalog KeystoneServiceCatalogV2) GetExternalServices(region string) []ExternalService {
+	return nil
 }
 
 func (catalog KeystoneServiceCatalogV2) GetServicesByInterface(region string, infType string) []ExternalService {
