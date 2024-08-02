@@ -30,6 +30,8 @@ type AdminAuthConfig struct {
 	AdminPassword string `help:"Admin password"`
 	AdminDomain   string `help:"Admin domain"`
 	AdminProject  string `help:"Admin project"`
+
+	AdminProjectDomain string `help:"Admin project domain"`
 }
 
 type AnsiblePlaybookConfig struct {

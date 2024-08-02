@@ -71,6 +71,8 @@ func Init() {
 		AdminPassword: options.Options.AdminPassword,
 		AdminDomain:   options.Options.AdminDomain,
 		AdminProject:  options.Options.AdminProject,
+
+		AdminProjectDomain: options.Options.AdminProjectDomain,
 	}
 	auth.Init(AuthConfig.ToAuthInfo(), false, true, "", "")
 }

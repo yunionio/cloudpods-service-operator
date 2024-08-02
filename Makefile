@@ -1,4 +1,3 @@
-
 # Env init
 ROOT_DIR := $(CURDIR)
 BUILD_DIR := $(ROOT_DIR)/_output
@@ -16,6 +15,8 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+
+GOPROXY ?= direct
 
 all: manager
 
@@ -62,7 +63,7 @@ vet:
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x $(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 # Generate doc
 generate-doc:
@@ -80,8 +81,7 @@ base-image:
 	docker buildx build --platform linux/arm64,linux/amd64 --push -t $(REGISTRY)/onecloud-service-operator-base:v0.0.1 -f ./Dockerfile.base .
 
 # Simple operator for build and push image in auto build env
-image:
-	make generate
+image: generate
 	DOCKER_DIR=${CURDIR} PUSH=true DEBUG=${DEBUG} \
 	REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} \
 	${CURDIR}/scripts/docker_push.sh manager
@@ -94,9 +94,9 @@ ifeq (, $(shell which controller-gen))
 	set -e ;\
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
 	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x go mod init tmp ;\
+	GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
+	rm -fr $$CONTROLLER_GEN_TMP_DIR ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
