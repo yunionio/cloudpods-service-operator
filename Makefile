@@ -81,7 +81,9 @@ base-image:
 	docker buildx build --platform linux/arm64,linux/amd64 --push -t $(REGISTRY)/onecloud-service-operator-base:v0.0.1 -f ./Dockerfile.base .
 
 # Simple operator for build and push image in auto build env
-image: generate
+image: generate image-only
+
+image-only:
 	DOCKER_DIR=${CURDIR} PUSH=true DEBUG=${DEBUG} \
 	REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} \
 	${CURDIR}/scripts/docker_push.sh manager
