@@ -78,7 +78,7 @@ docker-push:
 	docker push $(REGISTRY)/onecloud-service-operator:$(VERSION)
 
 base-image:
-	docker buildx build --platform linux/arm64,linux/amd64 --push -t $(REGISTRY)/onecloud-service-operator-base:v0.0.1 -f ./Dockerfile.base .
+	docker buildx build --platform linux/arm64,linux/amd64,linux/riscv64 --push -t $(REGISTRY)/onecloud-service-operator-base:v0.0.2 -f ./Dockerfile.base .
 
 # Simple operator for build and push image in auto build env
 image: generate image-only
