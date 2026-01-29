@@ -25,6 +25,22 @@ readlink_mac() {
   REAL_PATH=$PHYS_DIR/$TARGET_FILE
 }
 
+get_current_arch() {
+    local current_arch
+    case $(uname -m) in
+    x86_64)
+        current_arch=amd64
+        ;;
+    aarch64)
+        current_arch=arm64
+        ;;
+    riscv64)
+        current_arch=riscv64
+        ;;
+    esac
+    echo $current_arch
+}
+
 pushd $(cd "$(dirname "$0")"; pwd) > /dev/null
 readlink_mac $(basename "$0")
 cd "$(dirname "$REAL_PATH")"
@@ -36,6 +52,8 @@ DOCKER_DIR="${DOCKER_DIR}"
 
 REGISTRY=${REGISTRY:-docker.io/yunion}
 TAG=${TAG:-latest}
+CURRENT_ARCH=$(get_current_arch)
+ARCH=${ARCH:-$CURRENT_ARCH}
 PROJ=onecloud-service-operator
 image_keyword=onecloud-service-operator
 
@@ -49,7 +67,7 @@ build_bin() {
         -v $SRC_DIR:/root/go/src/yunion.io/x/$PROJ \
         -v $SRC_DIR/_output/alpine-build:/root/go/src/yunion.io/x/$PROJ/_output \
         -v $SRC_DIR/_output/alpine-build/_cache:/root/.cache \
-        registry.cn-beijing.aliyuncs.com/yunionio/alpine-build:1.0-3 \
+        registry.cn-beijing.aliyuncs.com/yunionio/alpine-build:3.22.2-go-1.24.9-0 \
         /bin/sh -c "set -ex; cd /root/go/src/yunion.io/x/$PROJ;
         $BUILD_ARCH $BUILD_CC $BUILD_CGO SHELL='sh -x' GOOS=linux make $component;
         chown -R $(id -u):$(id -g) _output;
@@ -69,12 +87,7 @@ buildx_and_push() {
     local path=$3
     local arch=$4
     docker buildx build -t "$tag" --platform "linux/$arch" -f "$2" "$3" --push
-    docker pull "$tag"
-}
-
-push_image() {
-    local tag=$1
-    docker push "$tag"
+    docker pull "$tag" --platform "linux/$arch"
 }
 
 get_image_name() {
@@ -85,27 +98,12 @@ get_image_name() {
         component="onecloud-service-operator"
     fi
     local img_name="$REGISTRY/$component:$TAG"
-    if [[ "$is_all_arch" == "true" || "$arch" == arm64 ]]; then
+    if [[ -n "$arch" ]]; then
+    if [[ "$is_all_arch" == "true" || "$arch" != "$CURRENT_ARCH" ]]; then
         img_name="${img_name}-$arch"
     fi
+    fi
     echo $img_name
-}
-
-build_process() {
-    local component=$1
-    local arch=$2
-    local is_all_arch=$3
-    local img_name=$(get_image_name $component $arch $is_all_arch)
-
-    build_bin $component
-    if [[ "$DRY_RUN" == "true" ]]; then
-        echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
-        return
-    fi
-    build_image $img_name $DOCKER_DIR/Dockerfile $SRC_DIR
-    if [[ "$PUSH" == "true" ]]; then
-        push_image "$img_name"
-    fi
 }
 
 build_process_with_buildx() {
@@ -133,11 +131,10 @@ make_manifest_image() {
         echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
         return
     fi
-    docker manifest create --amend $img_name \
-        $img_name-amd64 \
-        $img_name-arm64
-    docker manifest annotate $img_name $img_name-arm64 --arch arm64
-    docker manifest push $img_name
+    docker buildx imagetools create -t ${img_name} \
+        ${img_name}-amd64 \
+        ${img_name}-arm64 \
+        ${img_name}-riscv64
 }
 
 cd $SRC_DIR
@@ -152,15 +149,12 @@ fi
 
 case "$ARCH" in
     all)
-        for arch in "arm64" "amd64"; do
+        for arch in "arm64" "amd64" "riscv64"; do
             build_process_with_buildx $component $arch "true"
         done
         make_manifest_image $component
         ;;
-    arm64)
-        build_process_with_buildx $component $ARCH "false"
-        ;;
     *)
-        build_process $component
+        build_process_with_buildx $component $ARCH "false"
         ;;
 esac
