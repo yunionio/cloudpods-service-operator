@@ -15,7 +15,10 @@
 package compute
 
 import (
+	"fmt"
 	"time"
+
+	"yunion.io/x/jsonutils"
 
 	"yunion.io/x/onecloud/pkg/apis"
 	"yunion.io/x/onecloud/pkg/apis/billing"
@@ -25,22 +28,28 @@ type ServerListInput struct {
 	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
 	apis.DeletePreventableResourceBaseListInput
+	apis.MultiArchResourceBaseListInput
 
 	HostFilterListInput
 
-	NetworkFilterListInput `"yunion:ambiguous-prefix":"vpc_"`
+	NetworkFilterListInput `yunion-ambiguous-prefix:"vpc_"`
 
 	billing.BillingResourceListInput
 
 	GroupFilterListInput
 	SecgroupFilterListInput
-	//DiskFilterListInput `"yunion:ambiguous-prefix":"storage_"`
+	//DiskFilterListInput `yunion-ambiguous-prefix:"storage_"`
 	ScalingGroupFilterListInput
 
 	// 只列出裸金属主机
 	Baremetal *bool `json:"baremetal"`
 	// 只列出GPU主机
 	Gpu *bool `json:"gpu"`
+	// 只列出还有备份机的主机
+	Backup *bool `json:"bakcup"`
+	// 列出指定类型的主机
+	// enum: normal,gpu,backup
+	ServerType string `json:"server_type"`
 	// 列出管理安全组为指定安全组的主机
 	AdminSecgroup string `json:"admin_security"`
 	// 列出Hypervisor为指定值的主机
@@ -48,27 +57,35 @@ type ServerListInput struct {
 	Hypervisor []string `json:"hypervisor"`
 	// 列出绑定了弹性IP（EIP）的主机
 	WithEip *bool `json:"with_eip"`
-	// 列出未绑定弹性IP（EIO）的主机
+	// 列出未绑定弹性IP（EIP）的主机
 	WithoutEip *bool `json:"without_eip"`
+	// 列出可绑定弹性IP的主机
+	EipAssociable *bool `json:"eip_associable"`
 	// 列出操作系统为指定值的主机
 	// enum: linux,windows,vmware
 	OsType []string `json:"os_type"`
 
-	// 对列表结果按照磁盘进行排序
+	// 对列表结果按照磁盘大小进行排序
 	// enum: asc,desc
-	// OrderByDisk string `json:"order_by_disk"`
+	OrderByDisk string `json:"order_by_disk"`
+
+	// 根据ip查找机器
+	IpAddr string `json:"ip_addr"`
 
 	// 列出可以挂载指定EIP的主机
 	UsableServerForEip string `json:"usable_server_for_eip"`
 
 	// 列出可以挂载磁盘的主机
-	AttachableServersForDisk string `json:"attachable_servers_for_disk" "yunion:deprecated-by":"disk"`
+	AttachableServersForDisk string `json:"attachable_servers_for_disk"`
+	// Deprecated
+	// 列出可以挂载磁盘的主机
+	Disk string `json:"disk" yunion-deprecated-by:"attachable_servers_for_disk"`
 
 	// 按主机资源类型进行排序
 	// enum: shared,prepaid,dedicated
 	ResourceType string `json:"resource_type"`
-	// 返回开启主备机功能的主机
-	GetBackupGuestsOnHost *bool `json:"get_backup_guests_on_host"`
+	// 返回该宿主机上的所有虚拟机，包括备份机
+	GetAllGuestsOnHost string `json:"get_all_guests_on_host"`
 
 	// 根据宿主机 SN 过滤
 	// HostSn string `json:"host_sn"`
@@ -92,6 +109,9 @@ type ServerListInput struct {
 	SrcMacCheck *bool `json:"src_mac_check"`
 
 	InstanceType []string `json:"instance_type"`
+
+	// 是否调度到宿主机上
+	WithHost *bool `json:"with_host"`
 }
 
 func (input *ServerListInput) AfterUnmarshal() {
@@ -103,37 +123,19 @@ func (input *ServerListInput) AfterUnmarshal() {
 type ServerRebuildRootInput struct {
 	apis.Meta
 
-	// 镜像名称
-	Image string `json:"image"`
+	// swagger: ignore
+	Image string `json:"image" yunion-deprecated-by:"image_id"`
 	// 镜像 id
 	// required: true
-	ImageId       string `json:"image_id"`
-	Keypair       string `json:"keypair"`
+	ImageId string `json:"image_id"`
+	// swagger: ignore
+	Keypair string `json:"keypair" yunion-deprecated-by:"keypair_id"`
+	// 秘钥Id
 	KeypairId     string `json:"keypair_id"`
 	ResetPassword *bool  `json:"reset_password"`
 	Password      string `json:"password"`
 	AutoStart     *bool  `json:"auto_start"`
 	AllDisks      *bool  `json:"all_disks"`
-}
-
-func (i ServerRebuildRootInput) GetImageName() string {
-	if len(i.Image) > 0 {
-		return i.Image
-	}
-	if len(i.ImageId) > 0 {
-		return i.ImageId
-	}
-	return ""
-}
-
-func (i ServerRebuildRootInput) GetKeypairName() string {
-	if len(i.Keypair) > 0 {
-		return i.Keypair
-	}
-	if len(i.KeypairId) > 0 {
-		return i.KeypairId
-	}
-	return ""
 }
 
 type ServerResumeInput struct {
@@ -161,13 +163,12 @@ type ServerDetails struct {
 	SecurityRules string `json:"security_rules"`
 	// 操作系统名称
 	OsName string `json:"os_name"`
-	// 操作系统类型
-	OsType string `json:"os_type"`
+
 	// 系统管理员可见的安全组规则
 	AdminSecurityRules string `json:"admin_security_rules"`
 
 	// list
-	AttachTime time.Time `attach_time`
+	AttachTime time.Time `json:"attach_time"`
 
 	// common
 	IsPrepaidRecycle bool `json:"is_prepaid_recycle"`
@@ -193,6 +194,8 @@ type ServerDetails struct {
 	// IP地址列表字符串
 	// example: 10.165.2.1,172.16.8.1
 	IPs string `json:"ips"`
+	// mac地址信息
+	Macs string `json:"macs"`
 	// 网卡信息
 	Nics []GuestnetworkShortDesc `json:"nics"`
 
@@ -200,6 +203,8 @@ type ServerDetails struct {
 	Vpc string `json:"vpc"`
 	// 归属VPC ID
 	VpcId string `json:"vpc_id"`
+	// Vpc外网访问模式
+	VpcExternalAccessMode string `json:"vpc_external_access_mode"`
 
 	// 关联安全组列表
 	Secgroups []apis.StandaloneShortDesc `json:"secgroups"`
@@ -237,7 +242,7 @@ type GuestDiskInfo struct {
 	DiskType    string `json:"disk_type"`
 	Index       int8   `json:"index"`
 	SizeMb      int    `json:"size"`
-	DiskFormat  string `json:"disk_format"'`
+	DiskFormat  string `json:"disk_format"`
 	Driver      string `json:"driver"`
 	CacheMode   string `json:"cache_mode"`
 	AioMode     string `json:"aio_mode"`
@@ -247,6 +252,19 @@ type GuestDiskInfo struct {
 	Bps         int    `json:"bps"`
 	ImageId     string `json:"image_id,omitempty"`
 	Image       string `json:"image,omitemtpy"`
+}
+
+func (self GuestDiskInfo) ShortDesc() string {
+	fs := ""
+	if len(self.ImageId) > 0 {
+		fs = "root"
+	} else if len(self.FsFormat) > 0 {
+		fs = self.FsFormat
+	} else {
+		fs = "none"
+	}
+	return fmt.Sprintf("disk%d:%dM/%s/%s/%s/%s/%s", self.Index, self.SizeMb,
+		self.DiskFormat, self.Driver, self.CacheMode, self.AioMode, fs)
 }
 
 type GuestJointResourceDetails struct {
@@ -279,19 +297,19 @@ type GuestResourceInfo struct {
 
 type ServerResourceInput struct {
 	// 主机（ID或Name）
-	Server string `json:"server"`
+	ServerId string `json:"server_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by guest Id
-	ServerId string `json:"server_id" "yunion:deprecated-by":"server"`
+	Server string `json:"server" yunion-deprecated-by:"server_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by guest Id
-	Guest string `json:"guest" "yunion:deprecated-by":"server"`
+	Guest string `json:"guest" yunion-deprecated-by:"server_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by guest Id
-	GuestId string `json:"guest_id" "yunion:deprecated-by":"server"`
+	GuestId string `json:"guest_id" yunion-deprecated-by:"server_id"`
 }
 
 type ServerFilterListInput struct {
@@ -330,4 +348,343 @@ type ConvertEsxiToKvmInput struct {
 	TargetHypervisor string `json:"target_hypervisor"`
 	// 指定转换的宿主机
 	PreferHost string `json:"prefer_host"`
+}
+
+type GuestSaveToTemplateInput struct {
+	// The name of guest template
+	Name string `json:"name"`
+	// The generate name of guest template
+	GenerateName string `json:"generate_name"`
+}
+
+type GuestSyncFixNicsInput struct {
+	// 需要修正的IP地址列表
+	Ip []string `json:"ip"`
+}
+
+type GuestMigrateInput struct {
+	PreferHost   string `json:"prefer_host"`
+	AutoStart    bool   `json:"auto_start"`
+	IsRescueMode bool   `json:"rescue_mode"`
+}
+
+type GuestLiveMigrateInput struct {
+	// 指定期望的迁移目标宿主机
+	PreferHost string `json:"prefer_host"`
+	// 是否跳过CPU检查，默认要做CPU检查
+	SkipCpuCheck *bool `json:"skip_cpu_check"`
+}
+
+type GuestSetSecgroupInput struct {
+	// 安全组Id列表
+	// 实例必须处于运行,休眠或者关机状态
+	//
+	//
+	// | 平台		 | 最多绑定安全组数量	|
+	// |-------------|-------------------	|
+	// | Azure       | 1					|
+	// | VMware      | 不支持安全组			|
+	// | Baremetal   | 不支持安全组			|
+	// | ZStack	     | 1					|
+	// | 其他	     | 5					|
+	SecgroupIds []string `json:"secgroup_ids"`
+}
+
+type GuestRevokeSecgroupInput struct {
+	// 安全组Id列表
+	// 实例必须处于运行,休眠或者关机状态
+	SecgroupIds []string `json:"secgroup_ids"`
+}
+
+type GuestAssignSecgroupInput struct {
+	// 安全组Id
+	// 实例必须处于运行,休眠或者关机状态
+	SecgroupId string `json:"secgroup_id"`
+
+	// swagger:ignore
+	// Deprecated
+	Secgrp string `json:"secgrp" yunion-deprecated-by:"secgroup_id"`
+
+	// swagger:ignore
+	// Deprecated
+	Secgroup string `json:"secgroup" yunion-deprecated-by:"secgroup_id"`
+}
+
+type GuestAddSecgroupInput struct {
+	// 安全组Id列表
+	// 实例必须处于运行,休眠或者关机状态
+	//
+	//
+	// | 平台		 | 最多绑定安全组数量	|
+	// |-------------|-------------------	|
+	// | Azure       | 1					|
+	// | VMware      | 不支持安全组			|
+	// | Baremetal   | 不支持安全组			|
+	// | ZStack	     | 1					|
+	// | 其他	     | 5					|
+	SecgroupIds []string `json:"secgroup_ids"`
+}
+
+type ServerRemoteUpdateInput struct {
+	// 是否覆盖替换所有标签
+	ReplaceTags *bool `json:"replace_tags" help:"replace all remote tags"`
+}
+
+type ServerAssociateEipInput struct {
+	// swagger:ignore
+	// Deprecated
+	Eip string `json:"eip" yunion-deprecated-by:"eip_id"`
+	// 弹性公网IP的ID
+	EipId string `json:"eip_id"`
+}
+
+type ServerDissociateEipInput struct {
+	// 是否自动释放
+	AudoDelete *bool `json:"auto_delete"`
+}
+
+type ServerResetInput struct {
+	InstanceSnapshot string `json:"instance_snapshot"`
+	// 自动启动
+	AutoStart *bool `json:"auto_start"`
+}
+
+type ServerStopInput struct {
+	// 是否强制关机
+	IsForce bool `json:"is_force"`
+
+	// 是否关机停止计费, 若平台不支持停止计费，此参数无作用
+	// 目前仅阿里云，腾讯云此参数生效
+	StopCharging bool `json:"stop_charging"`
+}
+
+type ServerSaveImageInput struct {
+	// 镜像名称
+	Name         string
+	GenerateName string
+	Notes        string
+	IsPublic     bool
+	// 镜像格式
+	Format string
+
+	// 保存镜像后是否自动启动,若实例状态为运行中,则会先关闭实例
+	// default: false
+	AutoStart bool
+	// swagger: ignore
+	Restart bool
+
+	// swagger: ignore
+	OsType string
+
+	// swagger: ignore
+	OsArch string
+
+	// swagger: ignore
+	ImageId string
+}
+
+type ServerDeleteInput struct {
+	// 是否越过回收站直接删除
+	// default: false
+	OverridePendingDelete bool
+
+	// 是否仅删除本地资源
+	// default: false
+	Purge bool
+
+	// 是否删除快照
+	// default: false
+	DeleteSnapshots bool
+
+	// 是否删除关联的EIP
+	// default: false
+	DeleteEip bool
+
+	// 是否删除关联的数据盘
+	// default: false
+	DeleteDisks bool
+}
+
+type ServerDetachnetworkInput struct {
+	// 是否保留IP地址(ip地址会进入到预留ip)
+	Reserve bool `json:"reserve"`
+	// 通过IP子网地址, 优先级最高
+	NetId string `json:"net_id"`
+	// 通过IP解绑网卡, 优先级高于mac
+	IpAddr string `json:"ip_addr"`
+	// 通过Mac解绑网卡, 优先级低于ip_addr
+	Mac string `json:"mac"`
+}
+
+type ServerMigrateForecastInput struct {
+	PreferHostId string `json:"prefer_host_id"`
+	// Deprecated
+	PreferHost   string `json:"prefer_host" yunion-deprecated-by:"prefer_host_id"`
+	LiveMigrate  bool   `json:"live_migrate"`
+	SkipCpuCheck bool   `josn:"skip_cpu_check"`
+}
+
+type ServerResizeDiskInput struct {
+	// swagger: ignore
+	Disk string `json:"disk" yunion-deprecated-by:"disk_id"`
+	// 磁盘Id
+	DiskId string `json:"disk_id"`
+
+	DiskResizeInput
+}
+
+type ServerMigrateNetworkInput struct {
+	// Source network Id
+	Src string `json:"src"`
+	// Destination network Id
+	Dest string `json:"dest"`
+}
+
+type ServerDeployInput struct {
+	apis.Meta
+
+	// swagger: ignore
+	Keypair string `json:"keypair" yunion-deprecated-by:"keypair_id"`
+	// 秘钥Id
+	KeypairId string `json:"keypair_id"`
+
+	// 清理指定公钥
+	// 若指定的秘钥Id和虚拟机的秘钥Id不相同, 则清理旧的公钥
+	DeletePublicKey string `json:"delete_public_key"`
+	// 解绑当前虚拟机秘钥, 并清理公钥信息
+	DeleteKeypair bool `json:"__delete_keypair__"`
+	// 生成随机密码, 优先级低于password
+	ResetPassword bool `json:"reset_password"`
+	// 重置指定密码
+	Password string `json:"password"`
+	// 部署完成后是否自动启动
+	// 若虚拟机重置密码后需要重启生效，并且当前虚拟机状态为running, 此参数默认为true
+	// 若虚拟机状态为ready, 指定此参数后，部署完成后，虚拟机会自动启动
+	AutoStart bool `json:"auto_start"`
+	// swagger: ignore
+	Restart bool `json:"restart"`
+
+	// swagger: ignore
+	DeployConfigs []*DeployConfig `json:"deploy_configs"`
+}
+
+type ServerUserDataInput struct {
+	UserData string `json:"user_data"`
+}
+
+type ServerAttachDiskInput struct {
+	DiskId string `json:"disk_id"`
+}
+
+type ServerDetachDiskInput struct {
+	// 磁盘Id，若磁盘未挂载在虚拟机上，不返回错误
+	DiskId string `json:"disk_id"`
+	// 是否保留磁盘
+	// default: false
+	KeepDisk bool `json:"keep_disk"`
+}
+
+type ServerChangeConfigInput struct {
+	// 实例类型, 优先级高于vcpu_count和vmem_size
+	InstanceType string `json:"instance_type"`
+	// swagger: ignore
+	Sku string `json:"sku" yunion-deprecated-by:"instance_type"`
+	// swagger: ignore
+	Flavor string `json:"flavor" yunion-deprecated-by:"instance_type"`
+
+	// cpu大小
+	VcpuCount int `json:"vcpu_count"`
+	// 内存大小, 1024M, 1G
+	VmemSize string `json:"vmem_size"`
+
+	// 调整完配置后是否自动启动
+	AutoStart bool `json:"auto_start"`
+
+	Disks []DiskConfig `json:"disks"`
+}
+
+type ServerUpdateInput struct {
+	apis.VirtualResourceBaseUpdateInput
+
+	// 删除保护开关
+	DisableDelete *bool `json:"disable_delete"`
+	// 启动顺序
+	BootOrder *string `json:"boot_order"`
+	// 关机执行操作
+	ShutdownBehavior *string `json:"shutdown_behavior"`
+	Vga              *string `json:"vga"`
+	Vdi              *string `json:"vdi"`
+	Machine          *string `json:"machine"`
+	Bios             *string `json:"bios"`
+
+	SrcIpCheck  *bool `json:"src_ip_check"`
+	SrcMacCheck *bool `json:"src_mac_check"`
+
+	SshPort int `json:"ssh_port"`
+}
+
+type GuestJsonDesc struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	UUID        string `json:"uuid"`
+	Mem         int    `json:"mem"`
+	Cpu         int    `json:"cpu"`
+	Vga         string `json:"vga"`
+	Vdi         string `json:"vdi"`
+	Machine     string `json:"machie"`
+	Bios        string `json:"bios"`
+	BootOrder   string `json:"boot_order"`
+	SrcIpCheck  bool   `json:"src_ip_check"`
+	SrcMacCheck bool   `json:"src_mac_check"`
+	IsMaster    *bool  `json:"is_master"`
+	IsSlave     *bool  `json:"is_slave"`
+	HostId      string `json:"host_id"`
+
+	IsolatedDevices []*IsolatedDeviceJsonDesc `json:"isolated_devices"`
+
+	Domain string `json:"domain"`
+
+	Nics  []*GuestnetworkJsonDesc `json:"nics"`
+	Disks []*GuestdiskJsonDesc    `json:"disks"`
+
+	Cdrom *GuestcdromJsonDesc `json:"cdrom"`
+
+	Tenant        string `json:"tenant"`
+	TenantId      string `json:"tenant_id"`
+	DomainId      string `json:"domain_id"`
+	ProjectDomain string `json:"project_domain"`
+
+	Keypair string `json:"keypair"`
+	Pubkey  string `json:"pubkey"`
+
+	NetworkRoles []string `json:"network_roles"`
+
+	Secgroups          []*SecgroupJsonDesc `json:"secgroups"`
+	SecurityRules      string              `json:"security_rules"`
+	AdminSecurityRules string              `json:"admin_security_rules"`
+
+	ExtraOptions jsonutils.JSONObject `json:"extra_options"`
+
+	Kvm string `json:"kvm"`
+
+	Zone   string `json:"zone"`
+	ZoneId string `json:"zone_id"`
+
+	OsName string `json:"os_name"`
+
+	Metadata       map[string]string `json:"metadata"`
+	UserData       string            `json:"user_data"`
+	PendingDeleted bool              `json:"pending_deleted"`
+
+	ScallingGroupId string `json:"scalling_group_id"`
+
+	// baremetal
+	DiskConfig  jsonutils.JSONObject    `json:"disk_config"`
+	NicsStandby []*GuestnetworkJsonDesc `json:"nics_standby"`
+
+	// esxi
+	InstanceSnapshotInfo struct {
+		InstanceSnapshotId string `json:"instance_snapshot_id"`
+		InstanceId         string `json:"instance_id"`
+	} `json:"instance_snapshot_info"`
 }

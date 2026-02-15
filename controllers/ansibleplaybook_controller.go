@@ -75,6 +75,14 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	if ansiblePlaybook.Status.Phase == onecloudv1.ResourceFinished {
+		for _, info := range ansiblePlaybook.Status.DevtoolSshInfos {
+			resources.DeleteSshInfo(ctx, info.Id)
+		}
+		ansiblePlaybook.Status.DevtoolSshInfos = []onecloudv1.DevtoolSshInfo{}
+		for _, url := range ansiblePlaybook.Status.ServiceUrls {
+			resources.DeleteServiceUrl(ctx, url.Id)
+		}
+		ansiblePlaybook.Status.ServiceUrls = []onecloudv1.DevtoolServiceUrl{}
 		if ansiblePlaybook.Status.ExternalInfo.Id == "" {
 			return ctrl.Result{}, nil
 		}
@@ -186,14 +194,126 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 				)
 				return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
 			}
-			hosts = append(hosts, resources.AnsiblePlaybookHost{
-				VM:   &vm,
-				Vars: vars,
-			})
+			// prepare sshinfo
+			var sshInfo *onecloudv1.DevtoolSshInfo
+			for i := range ansiblePlaybook.Status.DevtoolSshInfos {
+				info := &ansiblePlaybook.Status.DevtoolSshInfos[i]
+				if info.VMName == vm.Name {
+					sshInfo = info
+					break
+				}
+			}
+			switch {
+			case sshInfo == nil:
+				id, err := resources.CreateSshInfo(ctx, vm.Status.ExternalInfo.Id)
+				if err != nil {
+					ansiblePlaybook.GetResourceStatus().SetPhase(onecloudv1.ResourceFailed,
+						fmt.Sprintf("unable to create sshinfo for vm %s: %v", vm.Name, err),
+					)
+					return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
+				}
+				ansiblePlaybook.Status.DevtoolSshInfos = append(ansiblePlaybook.Status.DevtoolSshInfos, onecloudv1.DevtoolSshInfo{VMName: vm.Name, Id: id})
+			case sshInfo.Host == "":
+				sshInfoData, err := resources.GetSshInfo(ctx, sshInfo.Id)
+				if err != nil {
+					ansiblePlaybook.GetResourceStatus().SetPhase(onecloudv1.ResourceFailed,
+						fmt.Sprintf("unable to get sshinfo %s: %v", sshInfo.Id, err),
+					)
+					return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
+				}
+				switch sshInfoData.Status {
+				case "ready":
+					sshInfo.Host = sshInfoData.Host
+					sshInfo.Port = sshInfoData.Port
+					sshInfo.User = sshInfoData.User
+					sshInfo.ServerName = sshInfoData.ServerName
+					hosts = append(hosts, resources.AnsiblePlaybookHost{
+						VM:      &vm,
+						Vars:    vars,
+						SshInfo: sshInfo,
+					})
+				case "create_failed":
+					ansiblePlaybook.GetResourceStatus().SetPhase(onecloudv1.ResourceFailed,
+						fmt.Sprintf("unable to create sshinfo %s: %s", sshInfo.Id, sshInfoData.FailedReason),
+					)
+					return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
+				case "creating":
+					return r.MarkWaiting(ctx, &ansiblePlaybook, fmt.Sprintf("wait for sshinfo %s created", sshInfo.Id), apWaitingAfter)
+				}
+			default:
+				hosts = append(hosts, resources.AnsiblePlaybookHost{
+					VM:      &vm,
+					Vars:    vars,
+					SshInfo: sshInfo,
+				})
+			}
+		}
+		if len(hosts) != len(ansiblePlaybook.Spec.Inventory) {
+			return r.MarkWaiting(ctx, &ansiblePlaybook, "wait fro sshinfo to create", apWaitingAfter)
+		}
+
+		ansibleInfo := resources.ServerAnsibleInfo{
+			User: hosts[0].SshInfo.User,
+			IP:   hosts[0].SshInfo.Host,
+			Port: hosts[0].SshInfo.Port,
+			Name: hosts[0].SshInfo.ServerName,
+		}
+
+		// preapre Proxy service
+		commonVars := make(map[string]interface{}, len(ansiblePlaybook.Spec.Vars))
+		for _, pv := range ansiblePlaybook.Spec.ProxyVars {
+			var sUrl *onecloudv1.DevtoolServiceUrl
+			for i := range ansiblePlaybook.Status.ServiceUrls {
+				url := &ansiblePlaybook.Status.ServiceUrls[i]
+				if url.Service == pv.Service {
+					sUrl = url
+					break
+				}
+			}
+			switch {
+			case sUrl == nil:
+				id, err := resources.CreateServiceUrl(ctx, resources.ServiceUrlCreateParam{
+					ServerId:          hosts[0].VM.Status.ExternalInfo.Id,
+					Service:           pv.Service,
+					ServerAnsibleInfo: ansibleInfo,
+				})
+				if err != nil {
+					ansiblePlaybook.GetResourceStatus().SetPhase(onecloudv1.ResourceFailed,
+						fmt.Sprintf("unable to create serviceurl for service %s: %v", pv.Service, err),
+					)
+					return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
+				}
+				ansiblePlaybook.Status.ServiceUrls = append(ansiblePlaybook.Status.ServiceUrls, onecloudv1.DevtoolServiceUrl{Id: id, Service: pv.Service})
+			case sUrl.Url == "":
+				uData, err := resources.GetServiceUrl(ctx, sUrl.Id)
+				if err != nil {
+					ansiblePlaybook.GetResourceStatus().SetPhase(onecloudv1.ResourceFailed,
+						fmt.Sprintf("unable to get serviceurl for service %s: %v", pv.Service, err),
+					)
+					return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
+				}
+				switch uData.Status {
+				case "ready":
+					sUrl.Url = uData.Url
+					commonVars[pv.Name] = sUrl.Url
+				case "creating":
+					return r.MarkWaiting(ctx, &ansiblePlaybook, fmt.Sprintf("wait for serviceurl %s created", sUrl.Id), apWaitingAfter)
+				case "create_failed":
+					ansiblePlaybook.GetResourceStatus().SetPhase(onecloudv1.ResourceFailed,
+						fmt.Sprintf("unable to create sshinfo %s: %s", uData.Id, uData.FailedReason),
+					)
+					return ctrl.Result{}, r.Status().Update(ctx, &ansiblePlaybook)
+				}
+			default:
+				commonVars[pv.Name] = sUrl.Url
+			}
+		}
+
+		if len(commonVars) != len(ansiblePlaybook.Spec.ProxyVars) {
+			return r.MarkWaiting(ctx, &ansiblePlaybook, "wait fro serviceUrl to create", apWaitingAfter)
 		}
 
 		// build common vars
-		commonVars := make(map[string]interface{}, len(ansiblePlaybook.Spec.Vars))
 		for varName, sv := range ansiblePlaybook.Spec.Vars {
 			vv, err := sv.GetValue(ctx)
 			if err != nil {

@@ -37,16 +37,18 @@ type LoadbalancerListenerListInput struct {
 	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
 	LoadbalancerFilterListInput
+	// filter by acl
+	LoadbalancerAclResourceInput
 
 	// filter by backend_group
 	BackendGroup string `json:"backend_group"`
-	// filter by acl
-	Acl string `json:"acl"`
 
 	ListenerType []string `json:"listener_type"`
 	ListenerPort []int    `json:"listener_port"`
 
 	Scheduler []string `json:"scheduler"`
+
+	Certificate []string `json:"certificate_id"`
 
 	SendProxy []string `json:"send_proxy"`
 
@@ -72,6 +74,7 @@ type LoadbalancerListenerRuleListInput struct {
 type LoadbalancerListInput struct {
 	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
+	apis.DeletePreventableResourceBaseListInput
 
 	VpcFilterListInput
 	ZonalFilterListBase
@@ -101,7 +104,7 @@ type LoadbalancerAgentListInput struct {
 }
 
 type LoadbalancerCertificateListInput struct {
-	apis.VirtualResourceListInput
+	apis.SharableVirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
 
 	UsableResourceListInput
@@ -168,8 +171,11 @@ type LoadbalancerDetails struct {
 	ManagedResourceInfo
 	CloudregionResourceInfo
 
+	LoadbalancerClusterResourceInfo
+
 	VpcResourceInfoBase
 	ZoneResourceInfoBase
+	Zone1ResourceInfoBase
 	NetworkResourceInfoBase
 
 	SLoadbalancer
@@ -197,16 +203,19 @@ type LoadbalancerResourceInfo struct {
 	// 可用区ID
 	ZoneId string `json:"zone_id"`
 
-	ZoneResourceInfoBase
+	ZoneResourceInfo
+
+	// cloud provider info
+	ManagedResourceInfo
 }
 
 type LoadbalancerResourceInput struct {
 	// 负载均衡名称
-	Loadbalancer string `json:"loadbalancer"`
+	LoadbalancerId string `json:"loadbalancer_id"`
 
 	// swagger:ignore
 	// Deprecated
-	LoadbalancerId string `json:"loadbalancer_id" "yunion:deprecated-by":"loadbalancer"`
+	Loadbalancer string `json:"loadbalancer" yunion-deprecated-by:"loadbalancer_id"`
 }
 
 type LoadbalancerFilterListInput struct {
@@ -236,6 +245,9 @@ type LoadbalancerCreateInput struct {
 	// 计费类型
 	ChargeType string `json:"charge_type"`
 
+	// 出口带宽
+	EgressMbps int `json:"egress_mbps"`
+
 	// 套餐名称
 	LoadbalancerSpec string `json:"loadbalancer_spec"`
 
@@ -244,6 +256,10 @@ type LoadbalancerCreateInput struct {
 
 	// LB的其他配置信息
 	LBInfo jsonutils.JSONObject `json:"lb_info"`
+
+	// 从可用区1
+	// required: false
+	Zone1 string `json:"zone_1"`
 
 	// SLoadbalancer
 
@@ -257,4 +273,9 @@ type LoadbalancerCreateInput struct {
 	// Network     string `json:"network"`
 	CloudproviderResourceInput
 	// Manager     string `json:"manager"`
+}
+
+type LoadbalancerRemoteUpdateInput struct {
+	// 是否覆盖替换所有标签
+	ReplaceTags *bool `json:"replace_tags" help:"replace all remote tags"`
 }

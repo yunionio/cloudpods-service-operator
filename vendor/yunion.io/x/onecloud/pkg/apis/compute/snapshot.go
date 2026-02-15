@@ -19,12 +19,12 @@ import "yunion.io/x/onecloud/pkg/apis"
 type SnapshotCreateInput struct {
 	apis.VirtualResourceCreateInput
 
-	// 磁盘名称或Id,建议使用Id
+	// 磁盘Id
 	// 目前仅VMware平台不支持创建快照,其余平台磁盘均支持创建快照
 	// required: true
-	Disk string `json:"disk"`
-	// swagger:ignore
 	DiskId string `json:"disk_id"`
+	// swagger:ignore
+	Disk string `json:"disk" yunion-deprecated-by:"disk_id"`
 	// swagger:ignore
 	StorageId string `json:"storage_id"`
 	// swagger:ignore
@@ -41,6 +41,8 @@ type SnapshotCreateInput struct {
 	OutOfChain bool `json:"out_of_chain"`
 	// swagger:ignore
 	ManagerId string `json:"manager_id"`
+	// swagger:ignore
+	OsArch string `json:"os_arch"`
 }
 
 type SSnapshotPolicyCreateInput struct {
@@ -70,6 +72,7 @@ type SSnapshotPolicyCreateInternalInput struct {
 type SnapshotListInput struct {
 	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
+	apis.MultiArchResourceBaseListInput
 
 	ManagedResourceListInput
 	RegionalFilterListInput
@@ -88,6 +91,9 @@ type SnapshotListInput struct {
 
 	OutOfChain *bool    `json:"out_of_chain"`
 	OsType     []string `json:"os_type"`
+
+	// list server snapshots
+	ServerId string `json:"server_id"`
 }
 
 type SnapshotDetails struct {

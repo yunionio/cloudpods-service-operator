@@ -28,6 +28,7 @@ const (
 	STORAGE_VSAN      = "vsan"
 	STORAGE_NFS       = "nfs"
 	STORAGE_GPFS      = "gpfs"
+	STORAGE_CIFS      = "cifs"
 
 	STORAGE_PUBLIC_CLOUD     = "cloud"
 	STORAGE_CLOUD_EFFICIENCY = "cloud_efficiency"
@@ -38,13 +39,17 @@ const (
 	STORAGE_EPHEMERAL_SSD    = "ephemeral_ssd"  //单块本地SSD盘, 容量最大不能超过800 GiB
 
 	//Azure hdd and ssd storagetype
-	STORAGE_STANDARD_LRS    = "standard_lrs"
-	STORAGE_STANDARDSSD_LRS = "standardssd_lrs"
-	STORAGE_PREMIUM_LRS     = "premium_lrs"
+	STORAGE_STANDARD_LRS          = "standard_lrs"
+	STORAGE_STANDARDSSD_LRS       = "standardssd_lrs"
+	STORAGE_PREMIUM_LRS           = "premium_lrs"
+	STORAGE_AZURE_BASIC           = "basic_storage"
+	STORAGE_AZURE_GENERAL_PURPOSE = "general_purpose_storage"
 
 	// aws storage type
 	STORAGE_GP2_SSD      = "gp2"      // aws general purpose ssd
+	STORAGE_GP3_SSD      = "gp3"      // aws General Purpose SSD (gp3)
 	STORAGE_IO1_SSD      = "io1"      // aws Provisioned IOPS SSD
+	STORAGE_IO2_SSD      = "io2"      // aws Provisioned IOPS 2 SSD
 	STORAGE_ST1_HDD      = "st1"      // aws Throughput Optimized HDD
 	STORAGE_SC1_HDD      = "sc1"      // aws Cold HDD
 	STORAGE_STANDARD_HDD = "standard" // aws Magnetic volumes
@@ -55,12 +60,14 @@ const (
 	STORAGE_LOCAL_SSD     = "local_ssd"
 	STORAGE_LOCAL_PRO     = "local_pro"
 	STORAGE_CLOUD_BASIC   = "cloud_basic"
-	STORAGE_CLOUD_PREMIUM = "cloud_premium"
+	STORAGE_CLOUD_PREMIUM = "cloud_premium" //高性能云硬盘
+	STORAGE_CLOUD_HSSD    = "cloud_hssd"    //增强型SSD云硬盘
 
 	// huawei storage type
-	STORAGE_HUAWEI_SSD  = "SSD"  // 超高IO云硬盘
-	STORAGE_HUAWEI_SAS  = "SAS"  // 高IO云硬盘
-	STORAGE_HUAWEI_SATA = "SATA" // 普通IO云硬盘
+	STORAGE_HUAWEI_SSD   = "SSD"   // 超高IO云硬盘
+	STORAGE_HUAWEI_SAS   = "SAS"   // 高IO云硬盘
+	STORAGE_HUAWEI_SATA  = "SATA"  // 普通IO云硬盘
+	STORAGE_HUAWEI_GPSSD = "GPSSD" // 通用型SSD
 
 	// openstack
 	STORAGE_OPENSTACK_ISCSI = "iscsi"
@@ -81,11 +88,25 @@ const (
 	STORAGE_GOOGLE_LOCAL_SSD   = "local-ssd"   //本地SSD暂存盘 (最多8个)
 	STORAGE_GOOGLE_PD_STANDARD = "pd-standard" //标准永久性磁盘
 	STORAGE_GOOGLE_PD_SSD      = "pd-ssd"      //SSD永久性磁盘
+	STORAGE_GOOGLE_PD_BALANCED = "pd-balanced" //平衡永久性磁盘
 
 	// ctyun storage type
 	STORAGE_CTYUN_SSD  = "SSD"  // 超高IO云硬盘
 	STORAGE_CTYUN_SAS  = "SAS"  // 高IO云硬盘
 	STORAGE_CTYUN_SATA = "SATA" // 普通IO云硬盘
+
+	// jd cloud storage type
+	STORAGE_JDCLOUD_GP1 = "ssd.gp1"     // 通用型SSD云硬盘
+	STORAGE_JDCLOUD_IO1 = "ssd.io1"     // 性能型SSD云硬盘
+	STORAGE_JDCLOUD_STD = "hdd.std1"    // 容量型HDD云硬盘
+	STORAGE_JDCLOUD_SSD = "ssd"         // SSD云硬盘
+	STORAGE_JDCLOUD_PHD = "premium-hdd" // HDD云硬盘
+
+	STORAGE_ECLOUD_CAPEBS = "capebs" // 容量盘
+	STORAGE_ECLOUD_EBS    = "ebs"    // 性能盘
+	STORAGE_ECLOUD_SSD    = "ssd"    // 高性能盘
+	STORAGE_ECLOUD_SSDEBS = "ssdebs" // 性能优化盘
+	STORAGE_ECLOUD_SYSTEM = "system" // 系统盘
 )
 
 const (
@@ -106,30 +127,32 @@ const (
 )
 
 var (
-	DISK_TYPES            = []string{DISK_TYPE_ROTATE, DISK_TYPE_SSD, DISK_TYPE_HYBRID}
-	STORAGE_LOCAL_TYPES   = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_UCLOUD_LOCAL_NORMAL, STORAGE_UCLOUD_LOCAL_SSD, STORAGE_UCLOUD_EXCLUSIVE_LOCAL_DISK}
+	DISK_TYPES          = []string{DISK_TYPE_ROTATE, DISK_TYPE_SSD, DISK_TYPE_HYBRID}
+	STORAGE_LOCAL_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_UCLOUD_LOCAL_NORMAL, STORAGE_UCLOUD_LOCAL_SSD, STORAGE_UCLOUD_EXCLUSIVE_LOCAL_DISK,
+		STORAGE_EPHEMERAL_SSD, STORAGE_LOCAL_BASIC, STORAGE_LOCAL_SSD, STORAGE_LOCAL_PRO, STORAGE_OPENSTACK_NOVA,
+		STORAGE_ZSTACK_LOCAL_STORAGE, STORAGE_GOOGLE_LOCAL_SSD}
 	STORAGE_SUPPORT_TYPES = STORAGE_LOCAL_TYPES
 	STORAGE_ALL_TYPES     = []string{
 		STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_SHEEPDOG,
 		STORAGE_RBD, STORAGE_DOCKER, STORAGE_NAS, STORAGE_VSAN,
-		STORAGE_NFS, STORAGE_GPFS,
+		STORAGE_NFS, STORAGE_GPFS, STORAGE_CIFS,
 	}
 	STORAGE_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_SHEEPDOG,
 		STORAGE_RBD, STORAGE_DOCKER, STORAGE_NAS, STORAGE_VSAN, STORAGE_NFS,
 		STORAGE_PUBLIC_CLOUD, STORAGE_CLOUD_SSD, STORAGE_CLOUD_ESSD, STORAGE_CLOUD_ESSD_PL2, STORAGE_CLOUD_ESSD_PL3,
 		STORAGE_EPHEMERAL_SSD, STORAGE_CLOUD_EFFICIENCY,
 		STORAGE_STANDARD_LRS, STORAGE_STANDARDSSD_LRS, STORAGE_PREMIUM_LRS,
-		STORAGE_GP2_SSD, STORAGE_IO1_SSD, STORAGE_ST1_HDD, STORAGE_SC1_HDD, STORAGE_STANDARD_HDD,
+		STORAGE_GP2_SSD, STORAGE_GP3_SSD, STORAGE_IO1_SSD, STORAGE_ST1_HDD, STORAGE_SC1_HDD, STORAGE_STANDARD_HDD,
 		STORAGE_LOCAL_BASIC, STORAGE_LOCAL_SSD, STORAGE_CLOUD_BASIC, STORAGE_CLOUD_PREMIUM,
 		STORAGE_HUAWEI_SSD, STORAGE_HUAWEI_SAS, STORAGE_HUAWEI_SATA,
 		STORAGE_OPENSTACK_ISCSI, STORAGE_UCLOUD_CLOUD_NORMAL, STORAGE_UCLOUD_CLOUD_SSD,
 		STORAGE_UCLOUD_LOCAL_NORMAL, STORAGE_UCLOUD_LOCAL_SSD, STORAGE_UCLOUD_EXCLUSIVE_LOCAL_DISK,
-		STORAGE_ZSTACK_LOCAL_STORAGE, STORAGE_ZSTACK_CEPH, STORAGE_GPFS,
+		STORAGE_ZSTACK_LOCAL_STORAGE, STORAGE_ZSTACK_CEPH, STORAGE_GPFS, STORAGE_CIFS,
 	}
 
-	HOST_STORAGE_LOCAL_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_ZSTACK_LOCAL_STORAGE}
+	HOST_STORAGE_LOCAL_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_ZSTACK_LOCAL_STORAGE, STORAGE_OPENSTACK_NOVA}
 
-	STORAGE_LIMITED_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_NAS, STORAGE_RBD, STORAGE_NFS, STORAGE_GPFS}
+	STORAGE_LIMITED_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_NAS, STORAGE_RBD, STORAGE_NFS, STORAGE_GPFS, STORAGE_VSAN, STORAGE_CIFS}
 
 	SHARED_FILE_STORAGE = []string{STORAGE_NFS, STORAGE_GPFS}
 	FIEL_STORAGE        = []string{STORAGE_LOCAL, STORAGE_NFS, STORAGE_GPFS}
@@ -138,13 +161,32 @@ var (
 	SHARED_STORAGE = []string{STORAGE_NFS, STORAGE_GPFS, STORAGE_RBD}
 )
 
+func IsDiskTypeMatch(t1, t2 string) bool {
+	switch t1 {
+	case DISK_TYPE_ROTATE:
+		if t2 == DISK_TYPE_SSD {
+			return false
+		} else {
+			return true
+		}
+	case DISK_TYPE_SSD:
+		if t2 == DISK_TYPE_ROTATE {
+			return false
+		} else {
+			return true
+		}
+	default:
+		return true
+	}
+}
+
 type StorageResourceInput struct {
 	// 存储（ID或Name）
-	Storage string `json:"storage"`
+	StorageId string `json:"storage_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by storage_id
-	StorageId string `json:"storage_id" "yunion:deprecated-by":"storage"`
+	Storage string `json:"storage" yunion-deprecated-by:"storage_id"`
 }
 
 type StorageFilterListInputBase struct {
@@ -174,10 +216,20 @@ type StorageShareFilterListInput struct {
 type StorageListInput struct {
 	apis.EnabledStatusInfrasResourceBaseListInput
 	apis.ExternalizedResourceBaseListInput
+	SchedtagResourceInput
 
 	ManagedResourceListInput
 	ZonalFilterListInput
 
 	UsableResourceListInput
 	StorageShareFilterListInput
+
+	// filter by host schedtag
+	HostSchedtagId string `json:"host_schedtag_id"`
+
+	// filter by cachedimage
+	ImageId string `json:"image_id"`
+
+	// filter storages which attached the specified host
+	HostId string `json:"host_id"`
 }

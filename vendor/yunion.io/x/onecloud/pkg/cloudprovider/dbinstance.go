@@ -16,6 +16,14 @@ package cloudprovider
 
 import "yunion.io/x/onecloud/pkg/util/billing"
 
+type TBackupMethod string
+
+const (
+	BackupMethodLogical  = TBackupMethod("Logical")
+	BackupMethodPhysical = TBackupMethod("Physical")
+	BackupMethodUnknown  = TBackupMethod("")
+)
+
 type SDBInstanceNetwork struct {
 	IP        string
 	NetworkId string
@@ -26,23 +34,28 @@ type SExtraIp struct {
 	URL string
 }
 
+type SZoneInfo struct {
+	Zone1  string
+	Zone2  string
+	Zone3  string
+	ZoneId string
+}
+
 type SInstanceType struct {
 	InstanceType string
-	ZoneIds      []string
+	SZoneInfo
 }
 
 type SManagedDBInstanceCreateConfig struct {
+	Name        string
+	Description string
+	StorageType string
+	DiskSizeGB  int
 	SInstanceType
-	Name             string
-	Description      string
-	StorageType      string
-	DiskSizeGB       int
-	InstanceType     string
-	InstanceTypes    []SInstanceType
 	VcpuCount        int
 	VmemSizeMb       int
 	VpcId            string
-	SecgroupId       string
+	SecgroupIds      []string
 	NetworkId        string
 	Address          string
 	Engine           string
@@ -52,13 +65,18 @@ type SManagedDBInstanceCreateConfig struct {
 	MasterInstanceId string
 	Password         string
 	Username         string
+	ProjectId        string
 
 	BillingCycle *billing.SBillingCycle
+	Tags         map[string]string
+
+	// 仅从备份恢复到新实例用到
+	RdsId    string
+	BackupId string
 }
 
 type SManagedDBInstanceChangeConfig struct {
 	DiskSizeGB   int
-	StorageType  string
 	InstanceType string
 }
 
@@ -76,6 +94,7 @@ type SDBInstancePrivilege struct {
 
 type SDBInstanceAccountCreateConfig struct {
 	Name        string
+	Host        string
 	Description string
 	Password    string
 }
@@ -87,6 +106,7 @@ type SDBInstanceBackupCreateConfig struct {
 }
 
 type SDBInstanceRecoveryConfig struct {
-	BackupId  string
-	Databases map[string]string
+	BackupId                   string
+	Databases                  map[string]string
+	OriginDBInstanceExternalId string
 }

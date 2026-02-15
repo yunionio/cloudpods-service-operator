@@ -66,7 +66,7 @@ type CloudenvResourceListInput struct {
 	Providers []string `json:"providers"`
 	// swagger:ignore
 	// Deprecated
-	Provider []string `json:"provider" "yunion:deprecated-by":"providers"`
+	Provider []string `json:"provider" yunion-deprecated-by:"providers"`
 
 	// 列出指定云平台品牌的资源，一般来说brand和provider相同，除了以上支持的provider之外，还支持以下band
 	//
@@ -77,7 +77,7 @@ type CloudenvResourceListInput struct {
 	Brands []string `json:"brands"`
 	// swagger:ignore
 	// Deprecated
-	Brand []string `json:"brand" "yunion:deprecated-by":"brands"`
+	Brand []string `json:"brand" yunion-deprecated-by:"brands"`
 
 	// 列出指定云环境的资源，支持云环境如下：
 	//
@@ -136,7 +136,7 @@ type CloudaccountCreateInput struct {
 	// 指定云平台
 	// Qcloud: 腾讯云
 	// Ctyun: 天翼云
-	// enum: VMware, Aliyun, Qcloud, Azure, Aws, Huawei, OpenStack, Ucloud, ZStack, Google, Ctyun
+	// enum: VMware, Aliyun, Qcloud, Azure, Aws, Huawei, OpenStack, Ucloud, ZStack, Google, Ctyun, JDcloud
 	Provider string `json:"provider"`
 	// swagger:ignore
 	AccountId string
@@ -180,9 +180,9 @@ type CloudaccountCreateInput struct {
 	// 自动同步间隔时间
 	SyncIntervalSeconds int `json:"sync_interval_seconds"`
 
-	// 自动根据云上项目或订阅创建本地项目
+	// 自动根据云上项目或订阅创建本地项目, OpenStack此参数为true
 	// default: false
-	AutoCreateProject bool `json:"auto_create_project"`
+	AutoCreateProject *bool `json:"auto_create_project"`
 
 	// 额外信息,例如账单的access key
 	Options *jsonutils.JSONDict `json:"options"`
@@ -191,6 +191,13 @@ type CloudaccountCreateInput struct {
 
 	cloudprovider.SCloudaccount
 	cloudprovider.SCloudaccountCredential
+
+	// 是否启用SAML认证
+	// default: false
+	SAMLAuth *bool `json:"saml_auth"`
+
+	// VMware 账号有zone属性
+	Zone string `json:"zone"`
 }
 
 type CloudaccountShareModeInput struct {
@@ -223,6 +230,11 @@ type CloudaccountListInput struct {
 
 	// 共享模式
 	ShareMode []string `json:"share_mode"`
+
+	// 代理
+	ProxySetting string `json:"proxy_setting"`
+	// swagger:ignore
+	ProxySettingId string `json:"proxy_setting_id" yunion-deprecated-by:"proxy_setting"`
 }
 
 type ProviderProject struct {
@@ -297,6 +309,8 @@ type CloudaccountDetail struct {
 	StoragecacheCount int `json:"storagecache_count,allowempty"`
 
 	ProxySetting proxyapi.SProxySetting `json:"proxy_setting"`
+
+	ProjectMappingResourceInfo
 }
 
 type CloudaccountUpdateInput struct {
@@ -310,6 +324,8 @@ type CloudaccountUpdateInput struct {
 	// 带删除的options key
 	RemoveOptions []string `json:"remove_options"`
 
+	SAMLAuth *bool `json:"saml_auth"`
+
 	proxyapi.ProxySettingResourceInput
 }
 
@@ -319,4 +335,151 @@ type CloudaccountPerformPublicInput struct {
 	// 共享模式，可能值为provider_domain, system
 	// example: provider_domain
 	ShareMode string `json:"share_mode"`
+}
+
+type CloudaccountPerformPrepareNetsInput struct {
+	CloudaccountCreateInput
+
+	WireLevelForVmware string `json:"wire_level_for_vmware"`
+	Dvs                bool   `json:"dvs"`
+}
+
+type CloudaccountPerformPrepareNetsOutput struct {
+	CAWireNets []CAWireNet  `json:"wire_networks"`
+	Hosts      []CAGuestNet `json:"hosts"`
+	Guests     []CAGuestNet `json:"guests"`
+	Wires      []CAPWire    `json:"wires"`
+	VSwitchs   []VSwitch    `json:"vswitchs"`
+}
+
+type CloudaccountSyncVMwareNetworkInput struct {
+	Zone string `help:"zone Id or Name" json:"zone"`
+}
+
+type CAPWire struct {
+	Id            string       `json:"id"`
+	Name          string       `json:"name"`
+	Distributed   bool         `json:"distributed"`
+	Hosts         []SimpleHost `json:"hosts"`
+	HostNetworks  []CANetConf  `json:"host_networks"`
+	GuestNetworks []CANetConf  `json:"guest_networks"`
+}
+
+type VSwitch struct {
+	Id            string       `json:"id"`
+	Name          string       `json:"name"`
+	Distributed   bool         `json:"distributed"`
+	Hosts         []SimpleHost `json:"hosts"`
+	HostNetworks  []CANetConf  `json:"host_networks"`
+	GuestNetworks []CANetConf  `json:"guest_networks"`
+}
+
+type SimpleHost struct {
+	Id   string
+	Name string
+}
+
+type CAWireNet struct {
+	SuggestedWire CAWireConf  `json:"suggested_wire"`
+	SuitableWire  string      `json:"suitable_wire,allowempty"`
+	Hosts         []CAHostNet `json:"hosts"`
+	// description: 没有合适的已有网络，推荐的网络配置
+	HostSuggestedNetworks []CANetConf  `json:"host_suggested_networks"`
+	Guests                []CAGuestNet `json:"guests"`
+	// description: 没有合适的已有网络，推荐的网络配置
+	GuestSuggestedNetworks []CANetConf `json:"guest_suggested_networks"`
+}
+
+type CAWireConf struct {
+	// Zoneids to be selected
+	ZoneIds []string `json:"zone_ids"`
+	// description: wire name
+	Name string `json:"name"`
+	// description: wire description
+	Description string `json:"description"`
+}
+
+type CAHostNet struct {
+	// description: Host 的 Name
+	Name string `json:"name"`
+	// description: IP
+	IP string `json:"ip"`
+	// description: 合适的已有网络
+	SuitableNetwork string `json:"suitable_network,allowempty"`
+}
+
+type CAGuestNet struct {
+	// description: Host 的 Name
+	Name   string    `json:"name"`
+	IPNets []CAIPNet `json:"ip_nets"`
+}
+
+type CAIPNet struct {
+	// description: IP
+	IP     string `json:"ip"`
+	VlanID int32  `json:"vlan_id"`
+	// description: 合适的已有网络
+	SuitableNetwork string `json:"suitable_network,allowempty"`
+}
+
+type CASimpleNetConf struct {
+	GuestIpStart string `json:"guest_ip_start"`
+	GuestIpEnd   string `json:"guest_ip_end"`
+	GuestIpMask  int8   `json:"guest_ip_mask"`
+	GuestGateway string `json:"guest_gateway"`
+	VlanID       int32  `json:"vlan_id"`
+}
+
+type CANetConf struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CASimpleNetConf
+}
+
+type SubscriptonCreateInput struct {
+
+	// EA 账号id, 可通过 cloud-account-enrollment-accounts接口获取里面的id字段
+	EnrollmentAccountId string `json:"enrollment_account_id"`
+
+	// 订阅名称
+	Name string `json:"name"`
+
+	// 可选值: MS-AZR-0017P(生产用途), MS-AZR-0148P(开发测试)
+	OfferType string `json:"offer_type"`
+}
+
+type EnrollmentAccountQuery struct {
+}
+
+type GetCloudaccountSamlOutput struct {
+	// cloudaccount SAML ServiceProvider entity ID
+	EntityId string `json:"entity_id,allowempty"`
+	// redirect login URL for this cloudaccount
+	RedirectLoginUrl string `json:"redirect_login_url,allowempty"`
+	// redirect logout URL for this cloudaccount
+	RedirectLogoutUrl string `json:"redirect_logout_url,allowempty"`
+	// metadata URL for this cloudaccount
+	MetadataUrl string `json:"metadata_url,allowempty"`
+	// initial SAML SSO login URL for this cloudaccount
+	InitLoginUrl string `json:"init_login_url,allowempty"`
+}
+
+type CloudaccountSyncSkusInput struct {
+	Resource string
+	Force    bool
+
+	CloudregionResourceInput
+	CloudproviderResourceInput
+}
+
+type CloudaccountEnableAutoSyncInput struct {
+	// 云账号状态必须是connected
+	// 最小值为region服务的minimal_sync_interval_seconds
+	SyncIntervalSeconds int `json:"sync_interval_seconds"`
+}
+
+type CloudaccountProjectMappingInput struct {
+	// 同步策略Id, 若不传此参数则解绑
+	// 绑定同步策略要求当前云账号此刻未绑定其他同步策略
+	ProjectMappingId string `json:"project_mapping_id"`
 }
