@@ -41,6 +41,8 @@ get_current_arch() {
     echo $current_arch
 }
 
+ALLARCH=("amd64" "arm64" "riscv64")
+
 pushd $(cd "$(dirname "$0")"; pwd) > /dev/null
 readlink_mac $(basename "$0")
 cd "$(dirname "$REAL_PATH")"
@@ -98,10 +100,8 @@ get_image_name() {
         component="onecloud-service-operator"
     fi
     local img_name="$REGISTRY/$component:$TAG"
-    if [[ -n "$arch" ]]; then
-    if [[ "$is_all_arch" == "true" || "$arch" != "$CURRENT_ARCH" ]]; then
+    if [[ -n "$arch" && "$is_all_arch" == "true" ]]; then
         img_name="${img_name}-$arch"
-    fi
     fi
     echo $img_name
 }
@@ -113,9 +113,6 @@ build_process_with_buildx() {
 
     build_env="GOARCH=$arch "
     local img_name=$(get_image_name $component $arch $is_all_arch)
-    if [[ $arch == arm64 ]]; then
-        build_env="$build_env CC=aarch64-linux-musl-gcc"
-    fi
 	build_bin $component $build_env
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
@@ -126,15 +123,20 @@ build_process_with_buildx() {
 
 make_manifest_image() {
     local component=$1
+    local arch=$2
     local img_name=$(get_image_name $component "" "false")
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
         return
     fi
-    docker buildx imagetools create -t ${img_name} \
-        ${img_name}-amd64 \
-        ${img_name}-arm64 \
-        ${img_name}-riscv64
+    CMD="docker buildx imagetools create -t ${img_name} "
+    for ac in "${ALLARCH[@]}"; do
+        if [[ "${arch}" == "all" || "${arch}" == *"$ac"* ]]; then
+            CMD="${CMD} ${img_name}-${ac}"
+        fi
+    done
+    echo "$CMD"
+    $CMD
 }
 
 cd $SRC_DIR
@@ -147,14 +149,16 @@ if [ -z "$component" ]; then
     exit 1
 fi
 
-case "$ARCH" in
-    all)
-        for arch in "arm64" "amd64" "riscv64"; do
-            build_process_with_buildx $component $arch "true"
-        done
-        make_manifest_image $component
-        ;;
-    *)
+multiarch=""
+for ac in "${ALLARCH[@]}"; do
+    if [[ "$ARCH" == "$ac" ]]; then
+        # single arch
         build_process_with_buildx $component $ARCH "false"
-        ;;
-esac
+    elif [[ "$ARCH" == "all" || "$ARCH" == *"$ac"* ]]; then
+        multiarch="true"
+        build_process_with_buildx $component $ac "true"
+    fi
+done
+if [[ "$multiarch" == "true" ]]; then
+    make_manifest_image $component $ARCH
+fi
