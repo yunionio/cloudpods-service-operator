@@ -16,19 +16,27 @@ package compute
 
 const (
 	//实例状态
-	DBINSTANCE_DEPLOYING      = "deploying"  //部署中
-	DBINSTANCE_RUNNING        = "running"    //运行中
-	DBINSTANCE_REBOOTING      = "rebooting"  //重启中
-	DBINSTANCE_MIGRATING      = "migrating"  //迁移中
-	DBINSTANCE_BACKING_UP     = "backing_up" //备份中
-	DBINSTANCE_RESTORING      = "restoring"  //备份恢复中
-	DBINSTANCE_RESTORE_FAILED = "restore_failed"
-	DBINSTANCE_IMPORTING      = "importing"     //数据导入中
-	DBINSTANCE_CLONING        = "cloning"       //克隆中
-	DBINSTANCE_DELETING       = "deleting"      //删除中
-	DBINSTANCE_DELETE_FAILED  = "delete_failed" //删除失败
-	DBINSTANCE_MAINTENANCE    = "maintenance"   //维护中
-	DBINSTANCE_UNKNOWN        = "unknown"
+	DBINSTANCE_INIT                  = "init"              //初始化
+	DBINSTANCE_DEPLOYING             = "deploying"         //部署中
+	DBINSTANCE_RUNNING               = "running"           //运行中
+	DBINSTANCE_REBOOTING             = "rebooting"         //重启中
+	DBINSTANCE_MIGRATING             = "migrating"         //迁移中
+	DBINSTANCE_BACKING_UP            = "backing_up"        //备份中
+	DBINSTANCE_BACKING_UP_FAILED     = "backing_up_failed" //备份失败
+	DBINSTANCE_RESTORING             = "restoring"         //备份恢复中
+	DBINSTANCE_RESTORE_FAILED        = "restore_failed"
+	DBINSTANCE_IMPORTING             = "importing"             //数据导入中
+	DBINSTANCE_CLONING               = "cloning"               //克隆中
+	DBINSTANCE_DELETING              = "deleting"              //删除中
+	DBINSTANCE_DELETE_FAILED         = "delete_failed"         //删除失败
+	DBINSTANCE_MAINTENANCE           = "maintenance"           //维护中
+	DBINSTANCE_ISOLATING             = "isolating"             //隔离中
+	DBINSTANCE_ISOLATE               = "isolate"               //已隔离
+	DBINSTANCE_UPGRADING             = "upgrading"             //升级中
+	DBINSTANCE_SET_AUTO_RENEW        = "set_auto_renew"        //设置自动续费中
+	DBINSTANCE_SET_AUTO_RENEW_FAILED = "set_auto_renew_failed" //设置自动续费失败
+	DBINSTANCE_UNKNOWN               = "unknown"
+	DBINSTANCE_SYNC_SECGROUP_FAILED  = "sync_secgroup_failed" // 同步安全组失败
 
 	DBINSTANCE_CHANGE_CONFIG        = "change_config"        //调整配置
 	DBINSTANCE_CHANGE_CONFIG_FAILED = "change_config_failed" //调整配置失败
@@ -42,6 +50,9 @@ const (
 	DBINSTANCE_CREATE_FAILED = "create_failed" //创建失败
 
 	DBINSTANCE_FAILE = "failed" //操作失败
+
+	DBINSTANCE_UPDATE_TAGS        = "update_tags"
+	DBINSTANCE_UPDATE_TAGS_FAILED = "update_tags_fail"
 
 	//备份状态
 	DBINSTANCE_BACKUP_READY         = "ready"         //正常
@@ -91,6 +102,7 @@ const (
 	DBINSTANCE_TYPE_MARIADB    = "MariaDB"
 	DBINSTANCE_TYPE_ORACLE     = "Oracle"
 	DBINSTANCE_TYPE_PPAS       = "PPAS"
+	DBINSTANCE_TYPE_PERCONA    = "Percona"
 
 	//阿里云实例类型
 	ALIYUN_DBINSTANCE_CATEGORY_BASIC    = "basic"             //基础版
@@ -98,10 +110,23 @@ const (
 	ALIYUN_DBINSTANCE_CATEGORY_ALWAYSON = "always_on"         //集群版
 	ALIYUN_DBINSTANCE_CATEGORY_FINANCE  = "finance"           //金融版
 
+	//腾讯云实例类型
+	QCLOUD_DBINSTANCE_CATEGORY_BASIC   = "basic" //基础版
+	QCLOUD_DBINSTANCE_CATEGORY_HA      = "ha"    //高可用
+	QCLOUD_DBINSTANCE_CATEGORY_FINANCE = "fe"    //金融版
+	QCLOUD_DBINSTANCE_CATEGORY_TDSQL   = "tdsql" //TDSQL
+
 	//华为云实例类型
 	HUAWEI_DBINSTANCE_CATEGORY_HA      = "ha"      //主备
 	HUAWEI_DBINSTANCE_CATEGORY_SINGLE  = "single"  //单机
 	HUAWEI_DBINSTANCE_CATEGORY_REPLICA = "replica" //只读
+
+	//谷歌云实例类型
+	GOOGLE_DBINSTANCE_CATEGORY_REGIONAL = "Regional" // 高可用性（区域级）
+	GOOGLE_DBINSTANCE_CATEGORY_ZONAL    = "Zonal"    // 单个地区
+
+	// Azure
+	AZURE_DBINSTANCE_CATEGORY_BASIC = "basic"
 
 	//阿里云存储类型
 	ALIYUN_DBINSTANCE_STORAGE_TYPE_LOCAL_SSD  = "local_ssd"  //本地盘SSD盘
@@ -113,6 +138,11 @@ const (
 	HUAWEI_DBINSTANCE_STORAGE_TYPE_ULTRAHIGHPRO = "ULTRAHIGHPRO"
 	HUAWEI_DBINSTANCE_STORAGE_TYPE_COMMON       = "COMMON"
 	HUAWEI_DBINSTANCE_STORAGE_TYPE_HIGH         = "HIGH"
+
+	//腾讯云
+	QCLOUD_DBINSTANCE_STORAGE_TYPE_LOCAL_SSD = "local_ssd" //本地盘SSD盘
+	QCLOUD_DBINSTANCE_STORAGE_TYPE_CLOUD_SSD = "cloud_ssd" //SSD云盘
+
 )
 
 var (
@@ -123,4 +153,20 @@ var (
 	ALIYUN_SQL_SERVER_DENY_KEYWORD []string = []string{
 		"root", " admin", " eagleye", " master", " aurora", " sa", " sysadmin", " administrator", " mssqld", " public", " securityadmin", " serveradmin", " setupadmin", " processadmin", " diskadmin", " dbcreator", " bulkadmin", " tempdb", " msdb", " model", " distribution", " mssqlsystemresource", " guest", " add", " except", " percent", " all", " exec", " plan", " alter", " execute", " precision", " and", " exists", " primary", " any", " exit", " print", " as", " fetch", " proc", " asc", " file", " procedure", " authorization", " fillfactor", " public", " backup", " for", " raiserror", " begin", " foreign", " read", " between", " freetext", " readtext", " break", " freetexttable", " reconfigure", " browse", " from", " references", " bulk", " full", " replication", " by", " function", " restore", " cascade", " goto", " restrict", " case", " grant", " return", " check", " group", " revoke", " checkpoint", " having", " right", " close", " holdlock", " rollback", " clustered", " identity", " rowcount", " coalesce", " identity_insert", " rowguidcol", " collate", " identitycol", " rule", " column", " if", " save", " commit", " in", " schema", " compute", " index", " select", " constraint", " inner", " session_user", " contains", " insert", " set", " containstable", " intersect", " setuser", " continue", " into", " shutdown", " convert", " is", " some", " create", " join", " statistics", " cross", " key", " system_user", " current", " kill", " table", " current_date", " left", " textsize", " current_time", " like", " then", " current_timestamp", " lineno", " to", " current_user", " load", " top", " cursor", " national", " tran", " database", " nocheck", " transaction", " dbcc", " nonclustered", " trigger", " deallocate", " not", " truncate", " declare", " null", " tsequal", " default", " nullif", " union", " delete", " of", " unique", " deny", " off", " update", " desc", " offsets", " updatetext", " disk", " on", " use", " distinct", " open", " user", " distributed", " opendatasource", " values", " double", " openquery", " varying", " drop", " openrowset", " view", " dummy", " openxml", " waitfor", " dump", " option", " when", " else", " or", " where", " end", " order", " while", " errlvl", " outer", " with", " escape", " over", " writetext", " galaxy",
 	}
+
+	RW_PRIVILEGE_SET = []string{
+		"SELECT", "INSERT", "UPDATE", "DELETE", "CREATE",
+		"DROP", "REFERENCES", "INDEX", "ALTER", "CREATE TEMPORARY TABLES",
+		"LOCK TABLES", "EXECUTE", "CREATE VIEW", "SHOW VIEW", "CREATE ROUTINE",
+		"ALTER ROUTINE", "EVENT", "TRIGGER", "PROCESS", "REPLICATION SLAVE",
+		"REPLICATION CLIENT",
+	}
+	R_PRIVILEGE_SET         = []string{"SELECT", "LOCK TABLES", "SHOW VIEW", "PROCESS", "REPLICATION SLAVE", "REPLICATION CLIENT"}
+	QCLOUD_RW_PRIVILEGE_SET = []string{
+		"SELECT", "INSERT", "UPDATE", "DELETE", "CREATE",
+		"DROP", "REFERENCES", "INDEX", "ALTER", "CREATE TEMPORARY TABLES",
+		"LOCK TABLES", "EXECUTE", "CREATE VIEW", "SHOW VIEW", "CREATE ROUTINE",
+		"ALTER ROUTINE", "EVENT", "TRIGGER",
+	}
+	QCLOUD_R_PRIVILEGE_SET = []string{"SELECT", "LOCK TABLES", "SHOW VIEW"}
 )

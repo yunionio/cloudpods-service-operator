@@ -17,14 +17,20 @@ package compute
 import (
 	"time"
 
+	"yunion.io/x/pkg/util/fileutils"
+
 	"yunion.io/x/onecloud/pkg/apis"
 	"yunion.io/x/onecloud/pkg/apis/billing"
+	"yunion.io/x/onecloud/pkg/httperrors"
 )
 
 type DiskCreateInput struct {
 	apis.VirtualResourceCreateInput
 
 	*DiskConfig
+
+	// 调度使用指定的云账号
+	PreferManager string `json:"prefer_manager_id"`
 
 	// 此参数仅适用于未指定storage时进行调度到指定区域创建磁盘
 	// required: false
@@ -51,19 +57,20 @@ type DiskCreateInput struct {
 func (req *DiskCreateInput) ToServerCreateInput() *ServerCreateInput {
 	input := ServerCreateInput{
 		ServerConfigs: &ServerConfigs{
-			PreferRegion: req.PreferRegion,
-			PreferZone:   req.PreferZone,
-			PreferWire:   req.PreferWire,
-			PreferHost:   req.PreferHost,
-			Hypervisor:   req.Hypervisor,
-			Disks:        []*DiskConfig{req.DiskConfig},
+			PreferManager: req.PreferManager,
+			PreferRegion:  req.PreferRegion,
+			PreferZone:    req.PreferZone,
+			PreferWire:    req.PreferWire,
+			PreferHost:    req.PreferHost,
+			Hypervisor:    req.Hypervisor,
+			Disks:         []*DiskConfig{req.DiskConfig},
 			// Project:      req.Project,
 			// Domain:       req.Domain,
 		},
 	}
 	input.Name = req.Name
-	input.Project = req.Project
-	input.ProjectDomain = req.ProjectDomain
+	input.ProjectId = req.ProjectId
+	input.ProjectDomainId = req.ProjectDomainId
 	return &input
 }
 
@@ -77,18 +84,18 @@ func (req *ServerCreateInput) ToDiskCreateInput() *DiskCreateInput {
 		Hypervisor:   req.Hypervisor,
 	}
 	input.Name = req.Name
-	input.Project = req.Project
-	input.ProjectDomain = req.ProjectDomain
+	input.ProjectId = req.ProjectId
+	input.ProjectDomainId = req.ProjectDomainId
 	return &input
 }
 
 type SnapshotPolicyResourceInput struct {
 	// filter disk by snapshotpolicy
-	Snapshotpolicy string `json:"snapshotpolicy"`
+	SnapshotpolicyId string `json:"snapshotpolicy_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter disk by snapshotpolicy_id
-	SnapshotpolicyId string `json:"snapshotpolicy_id" "yunion:deprecated-by":"snapshotpolicy"`
+	Snapshotpolicy string `json:"snapshotpolicy" yunion-deprecated-by:"snapshotpolicy_id"`
 }
 
 type SnapshotPolicyFilterListInput struct {
@@ -101,6 +108,8 @@ type SnapshotPolicyFilterListInput struct {
 type DiskListInput struct {
 	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
+	apis.MultiArchResourceBaseListInput
+	apis.AutoDeleteResourceBaseListInput
 	billing.BillingResourceListInput
 	StorageFilterListInput
 
@@ -113,7 +122,7 @@ type DiskListInput struct {
 	// swagger:ignore
 	// Deprecated
 	// filter by disk type
-	Type string `json:"type" "yunion:deprecated-by":"disk_type"`
+	Type string `json:"type" yunion-deprecated-by:"disk_type"`
 	// 过滤指定disk_type的磁盘列表，可能的值为：sys, data, swap. volume
 	//
 	// | disk_type值 | 说明 |
@@ -129,30 +138,31 @@ type DiskListInput struct {
 
 	DiskSize int `json:"disk_size"`
 
-	AutoDelete *bool `json:"auto_delete"`
-
 	FsFormat string `json:"fs_format"`
 
 	// 镜像
-	Template string `json:"template"`
+	ImageId string `json:"image_id"`
 	// swagger:ignore
 	// Deprecated
-	TemplateId string `json:"template_id" "yunion:deprecated-by":"template"`
+	Template string `json:"template" yunion-deprecated-by:"image_id"`
+	// swagger:ignore
+	// Deprecated
+	TemplateId string `json:"template_id" yunion-deprecated-by:"image_id"`
 
 	// 快照
-	Snapshot string `json:"snapshot"`
+	SnapshotId string `json:"snapshot_id"`
 	// swagger:ignore
 	// Deprecated
-	SnapshotId string `json:"snapshot_id" "yunion:deprecated-by":"snapshot"`
+	Snapshot string `json:"snapshot" yunion-deprecated-by:"snapshot_id"`
 }
 
 type DiskResourceInput struct {
 	// 虚拟磁盘（ID或Name）
-	Disk string `json:"disk"`
+	DiskId string `json:"disk_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by disk_id
-	DiskId string `json:"disk_id" "yunion:deprecated-by":"disk"`
+	Disk string `json:"disk" yunion-deprecated-by:"disk_id"`
 }
 
 type DiskFilterListInputBase struct {
@@ -233,4 +243,25 @@ type DiskUpdateInput struct {
 
 	// 磁盘类型
 	DiskType string `json:"disk_type"`
+}
+
+type DiskSaveInput struct {
+	Name   string
+	Format string
+
+	// swagger: ignore
+	ImageId string
+}
+
+type DiskResizeInput struct {
+	// default unit: Mb
+	// example: 1024; 40G; 1024M
+	Size string `json:"size"`
+}
+
+func (self DiskResizeInput) SizeMb() (int, error) {
+	if len(self.Size) == 0 {
+		return 0, httperrors.NewMissingParameterError("size")
+	}
+	return fileutils.GetSizeMb(self.Size, 'M', 1024)
 }

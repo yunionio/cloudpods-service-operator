@@ -40,7 +40,14 @@ type AnsiblePlaybookSpec struct {
 	// +optional
 	Vars map[string]IntOrStringOrYamlStore `json:"vars,omitempty"`
 
+	ProxyVars []AnsiblePlaybookProxyVar `json:"proxyVars,omitempty"`
+
 	ResourceSpecBase `json:",inline"`
+}
+
+type AnsiblePlaybookProxyVar struct {
+	Name    string `json:"name,omitempty"`
+	Service string `json:"service,omitempty"`
 }
 
 // AnsiblePlaybookStatus defines the observed state of AnsiblePlaybook
@@ -49,6 +56,24 @@ type AnsiblePlaybookStatus struct {
 	ResourceStatusBase `json:",inline"`
 	// +optional
 	ExternalInfo AnsiblePlaybookInfo `json:"externalInfo,omitempty"`
+
+	DevtoolSshInfos []DevtoolSshInfo    `json:"devtoolSshInfos,omitempty"`
+	ServiceUrls     []DevtoolServiceUrl `json:"serviceUrls,omitempty"`
+}
+
+type DevtoolSshInfo struct {
+	VMName     string `json:"vmName,omitempty"`
+	Id         string `json:"id,omitempty"`
+	User       string `json:"user,omitempty"`
+	Host       string `json:"host,omitempty"`
+	Port       int    `json:"port,omitempty"`
+	ServerName string `json:"serverName,omitempty"`
+}
+
+type DevtoolServiceUrl struct {
+	Id      string `json:"id,omitempty"`
+	Service string `json:"service,omitempty"`
+	Url     string `json:"url,omitempty"`
 }
 
 type AnsiblePlaybookHost struct {

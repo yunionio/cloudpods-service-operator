@@ -28,6 +28,8 @@ type SLDAPIdpConfigBaseOptions struct {
 	Suffix   string `json:"suffix,omitempty" required:"true"`
 	User     string `json:"user,omitempty" required:"true"`
 	Password string `json:"password,omitempty" required:"true"`
+
+	DisableUserOnImport bool `json:"disable_user_on_import"`
 }
 
 type SLDAPIdpConfigSingleDomainOptions struct {
@@ -50,6 +52,8 @@ type SLDAPIdpConfigOptions struct {
 
 	User     string `json:"user,omitempty"`
 	Password string `json:"password,omitempty"`
+
+	DisableUserOnImport bool `json:"disable_user_on_import"`
 
 	DomainTreeDN        string `json:"domain_tree_dn,omitempty" help:"Domain tree root node dn(distinguished name)"`
 	DomainFilter        string `json:"domain_filter,omitempty"`
@@ -84,6 +88,20 @@ const (
 	IdpTemplateMSSingleDomain       = "msad_one_domain"
 	IdpTemplateMSMultiDomain        = "msad_multi_domain"
 	IdpTemplateOpenLDAPSingleDomain = "openldap_one_domain"
+
+	IdpTemplateSAMLTest    = "samltest_saml"
+	IdpTemplateAzureADSAML = "azure_ad_saml"
+
+	IdpTemplateDex         = "dex_oidc"
+	IdpTemplateGithub      = "github_oidc"
+	IdpTemplateAzureOAuth2 = "azure_oidc"
+	IdpTemplateGoogle      = "google_oidc"
+
+	IdpTemplateAlipay   = "alipay_oauth2"
+	IdpTemplateWechat   = "wechat_oauth2"
+	IdpTemplateDingtalk = "dingtalk_oauth2"
+	IdpTemplateFeishu   = "feishu_oauth2"
+	IdpTemplateQywechat = "qywechat_oauth2"
 )
 
 var (
@@ -91,6 +109,20 @@ var (
 		IdpTemplateMSSingleDomain:       IdentityDriverLDAP,
 		IdpTemplateMSMultiDomain:        IdentityDriverLDAP,
 		IdpTemplateOpenLDAPSingleDomain: IdentityDriverLDAP,
+
+		IdpTemplateSAMLTest:    IdentityDriverSAML,
+		IdpTemplateAzureADSAML: IdentityDriverSAML,
+
+		IdpTemplateDex:         IdentityDriverOIDC,
+		IdpTemplateGithub:      IdentityDriverOIDC,
+		IdpTemplateAzureOAuth2: IdentityDriverOIDC,
+		IdpTemplateGoogle:      IdentityDriverOIDC,
+
+		IdpTemplateAlipay:   IdentityDriverOAuth2,
+		IdpTemplateFeishu:   IdentityDriverOAuth2,
+		IdpTemplateDingtalk: IdentityDriverOAuth2,
+		IdpTemplateWechat:   IdentityDriverOAuth2,
+		IdpTemplateQywechat: IdentityDriverOAuth2,
 	}
 )
 

@@ -14,8 +14,10 @@
 
 package identity
 
+import "yunion.io/x/onecloud/pkg/apis"
+
 const (
-	SERVICE_TYPE = "identity"
+	SERVICE_TYPE = apis.SERVICE_TYPE_KEYSTONE
 
 	DEFAULT_DOMAIN_ID   = "default"
 	DEFAULT_DOMAIN_NAME = "Default"
@@ -32,6 +34,9 @@ const (
 	AUTH_METHOD_TOKEN    = "token"
 	AUTH_METHOD_AKSK     = "aksk"
 	AUTH_METHOD_CAS      = "cas"
+	AUTH_METHOD_SAML     = "saml"
+	AUTH_METHOD_OIDC     = "oidc"
+	AUTH_METHOD_OAuth2   = "oauth2"
 
 	// AUTH_METHOD_ID_PASSWORD = 1
 	// AUTH_METHOD_ID_TOKEN    = 2
@@ -55,9 +60,12 @@ const (
 	IdMappingEntityGroup  = "group"
 	IdMappingEntityDomain = "domain"
 
-	IdentityDriverSQL  = "sql"
-	IdentityDriverLDAP = "ldap"
-	IdentityDriverCAS  = "cas"
+	IdentityDriverSQL    = "sql"
+	IdentityDriverLDAP   = "ldap"
+	IdentityDriverCAS    = "cas"
+	IdentityDriverSAML   = "saml"
+	IdentityDriverOIDC   = "oidc"   // OpenID Connect
+	IdentityDriverOAuth2 = "oauth2" // OAuth2.0
 
 	IdentityDriverStatusConnected    = "connected"
 	IdentityDriverStatusDisconnected = "disconnected"
@@ -91,12 +99,17 @@ var (
 
 	CommonWhitelistOptionMap = map[string][]string{
 		"default": []string{
+			"enable_quota_check",
 			"default_quota_value",
 			"enable_rbac",
 			"non_default_domain_projects",
 			"time_zone",
 			"domainized_namespace",
 			"api_server",
+			"customized_private_prefixes",
+			"global_http_proxy",
+			"global_https_proxy",
+			"ignore_nonrunning_guests",
 		},
 	}
 
@@ -154,6 +167,8 @@ var (
 			"etcd_cacert",
 			"etcd_cert",
 			"etcd_key",
+			"splitable_max_duration_hours",
+			"splitable_max_keep_segments",
 
 			// ############################
 			// keystone blacklist options
@@ -191,6 +206,26 @@ var (
 			// "status_probe_interval_seconds",
 			// "log_fetch_interval_seconds",
 			// "send_metrics_interval_seconds",
+			// ############################
+			// glance blacklist options
+			// ############################
+			"deploy_server_socket_path",
 		},
 	}
 )
+
+func mergeConfigOptionsFrom(opt1, opt2 map[string][]string) map[string][]string {
+	for opt, values := range opt2 {
+		ovalues, _ := opt1[opt]
+		opt1[opt] = append(ovalues, values...)
+	}
+	return opt1
+}
+
+func MergeServiceConfigOptions(opts ...map[string][]string) map[string][]string {
+	ret := make(map[string][]string)
+	for i := range opts {
+		ret = mergeConfigOptionsFrom(ret, opts[i])
+	}
+	return ret
+}

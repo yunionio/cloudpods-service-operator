@@ -53,10 +53,12 @@ type ServerConfig struct {
 	GuestStatus string `json:"guest_status"`
 	Cdrom       string `json:"cdrom"`
 
+	// owner project id
 	Project string `json:"project_id"`
-	Domain  string `json:"domain_id"`
+	// owner domain id
+	Domain string `json:"domain_id"`
 
-	// DEPRECATED
+	// Deprecated
 	Metadata       map[string]string `json:"__meta__"`
 	ForGuests      []*ForGuest       `json:"for_guests"`
 	GroupRelations []*GroupRelation  `json:"group_releations"`
@@ -78,6 +80,18 @@ type ScheduleInput struct {
 	CpuDesc      string `json:"cpu_desc"`
 	CpuMicrocode string `json:"cpu_microcode"`
 	CpuMode      string `json:"cpu_mode"`
+	OsArch       string `json:"os_arch"`
+
+	SkipCpuCheck *bool `json:"skip_cpu_check"`
+
+	// In the migrate and create backup cases
+	// we don't need reallocate network
+	ReuseNetwork bool `json:"reuse_network"`
+
+	// Change config
+	ChangeConfig bool
+	// guest who change config has isolated device
+	HasIsolatedDevice bool
 
 	PendingUsages []jsonutils.JSONObject
 }

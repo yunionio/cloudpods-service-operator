@@ -47,27 +47,27 @@ type ResourceManager struct {
 	idFieldName   string
 }
 
-func (this *ResourceManager) GetKeyword() string {
+func (this ResourceManager) GetKeyword() string {
 	return this.Keyword
 }
 
-func (this *ResourceManager) KeyString() string {
+func (this ResourceManager) KeyString() string {
 	return this.KeywordPlural
 }
 
-func (this *ResourceManager) Version() string {
+func (this ResourceManager) Version() string {
 	return this.version
 }
 
-func (this *ResourceManager) ServiceType() string {
+func (this ResourceManager) ServiceType() string {
 	return this.serviceType
 }
 
-func (this *ResourceManager) EndpointType() string {
+func (this ResourceManager) EndpointType() string {
 	return this.endpointType
 }
 
-func (this *ResourceManager) URLPath() string {
+func (this ResourceManager) URLPath() string {
 	return strings.Replace(this.KeywordPlural, ":", "/", -1)
 }
 
@@ -450,6 +450,16 @@ func (this *ResourceManager) BatchPutInContext(session *mcclient.ClientSession, 
 func (this *ResourceManager) BatchPutInContexts(session *mcclient.ClientSession, idlist []string, params jsonutils.JSONObject, ctxs []ManagerContext) []SubmitResult {
 	return BatchDo(idlist, func(id string) (jsonutils.JSONObject, error) {
 		return this.PutInContexts(session, id, params, ctxs)
+	})
+}
+
+func (this *ResourceManager) BatchParamsUpdate(session *mcclient.ClientSession, idlist []string, params []jsonutils.JSONObject) []SubmitResult {
+	return this.BatchParamsPutInContexts(session, idlist, params, nil)
+}
+
+func (this *ResourceManager) BatchParamsPutInContexts(session *mcclient.ClientSession, idlist []string, params []jsonutils.JSONObject, ctxs []ManagerContext) []SubmitResult {
+	return BatchParamsDo(idlist, params, func(id string, param jsonutils.JSONObject) (jsonutils.JSONObject, error) {
+		return this.PutInContexts(session, id, param, ctxs)
 	})
 }
 
