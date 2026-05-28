@@ -37,8 +37,7 @@ type EndpointReconciler struct {
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=endpoints/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=virtualmachines,verbs=get;list;watch
 
-func (r *EndpointReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *EndpointReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	var endpoint onecloudv1.Endpoint
 	if err := r.Get(ctx, req.NamespacedName, &endpoint); err != nil {

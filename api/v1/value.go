@@ -73,7 +73,7 @@ func (st StringStore) GetValue(ctx context.Context) (IValue, error) {
 
 type IntOrStringStore struct {
 	// +optional
-	Value *IntOrString `json:"value,omitempty"`
+	Value *intstr.IntOrString `json:"value,omitempty"`
 	// +optional
 	Reference *ObjectFieldReference `json:"reference,omitempty"`
 }
@@ -118,7 +118,7 @@ func (isv IntOrString) Interface() interface{} {
 
 func (ist IntOrStringStore) GetValue(ctx context.Context) (IValue, error) {
 	if ist.Value != nil {
-		return *ist.Value, nil
+		return IntOrString{*ist.Value}, nil
 	}
 	in, err := ist.Reference.Value(ctx)
 	if err != nil || in == nil {

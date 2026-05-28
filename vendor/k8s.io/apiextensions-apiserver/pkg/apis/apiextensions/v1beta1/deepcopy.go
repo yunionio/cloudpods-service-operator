@@ -260,5 +260,19 @@ func (in *JSONSchemaProps) DeepCopy() *JSONSchemaProps {
 		}
 	}
 
+	if in.XMapType != nil {
+		in, out := &in.XMapType, &out.XMapType
+		*out = new(string)
+		**out = **in
+	}
+
+	if in.XValidations != nil {
+		inValidations, outValidations := &in.XValidations, &out.XValidations
+		*outValidations = make([]ValidationRule, len(*inValidations))
+		for i := range *inValidations {
+			in.XValidations[i].DeepCopyInto(&out.XValidations[i])
+		}
+	}
+
 	return out
 }

@@ -36,8 +36,7 @@ type VirtualMachineReconciler struct {
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=virtualmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=virtualmachines/status,verbs=get;update;patch
 
-func (r *VirtualMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *VirtualMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	var virtualMachine onecloudv1.VirtualMachine
 	if err := r.Get(ctx, req.NamespacedName, &virtualMachine); err != nil {
