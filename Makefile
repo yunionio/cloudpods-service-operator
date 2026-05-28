@@ -6,8 +6,7 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
                 git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
 
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -51,7 +50,7 @@ deploy: manifests
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role paths="./..." output:crd:artifacts:config=config/crd/bases
 
 # Run go fmt against code
 fmt:
@@ -90,17 +89,16 @@ image-only:
 
 # find or download controller-gen
 # download controller-gen if necessary
+CONTROLLER_GEN_VERSION ?= v0.14.0
 controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x go mod init tmp ;\
-	GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
-	rm -fr $$CONTROLLER_GEN_TMP_DIR ;\
-	}
+	@CONTROLLER_GEN=$$(command -v controller-gen 2>/dev/null || true); \
+	if [ -z "$$CONTROLLER_GEN" ] || ! $$CONTROLLER_GEN --version 2>/dev/null | grep -q $(CONTROLLER_GEN_VERSION); then \
+		echo "building controller-gen $(CONTROLLER_GEN_VERSION)..."; \
+		CONTROLLER_GEN_TMP_DIR=$$(mktemp -d); \
+		cd $$CONTROLLER_GEN_TMP_DIR; \
+		GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x GOTOOLCHAIN=go1.22.0 go mod init tmp; \
+		GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x GOTOOLCHAIN=go1.22.0 go get sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION); \
+		GOPROXY=$(GOPROXY) GONOSUMDB=yunion.io/x GOTOOLCHAIN=go1.22.0 CGO_ENABLED=0 go build -o $(GOBIN)/controller-gen sigs.k8s.io/controller-tools/cmd/controller-gen; \
+		rm -fr $$CONTROLLER_GEN_TMP_DIR; \
+	fi
 CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif

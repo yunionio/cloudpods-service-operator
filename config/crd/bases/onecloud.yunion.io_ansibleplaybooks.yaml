@@ -1,11 +1,9 @@
-
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.5
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: ansibleplaybooks.onecloud.yunion.io
 spec:
   group: onecloud.yunion.io
@@ -15,218 +13,216 @@ spec:
     plural: ansibleplaybooks
     singular: ansibleplaybook
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      description: AnsiblePlaybook is the Schema for the ansibleplaybooks API
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: AnsiblePlaybookSpec defines the desired state of AnsiblePlaybook
-          properties:
-            inventory:
-              description: VirtualMachines specifies the inventory of ansible playbook.
-              items:
-                properties:
-                  vars:
-                    additionalProperties:
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: AnsiblePlaybook is the Schema for the ansibleplaybooks API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AnsiblePlaybookSpec defines the desired state of AnsiblePlaybook
+            properties:
+              inventory:
+                description: VirtualMachines specifies the inventory of ansible playbook.
+                items:
+                  properties:
+                    vars:
+                      additionalProperties:
+                        properties:
+                          isYaml:
+                            description: IsYaml determines whether the string in IntOrStringStore
+                              is a yaml string
+                            type: boolean
+                          reference:
+                            properties:
+                              fieldPath:
+                                type: string
+                              group:
+                                type: string
+                              kind:
+                                type: string
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                              version:
+                                type: string
+                            required:
+                            - fieldPath
+                            - kind
+                            - name
+                            - namespace
+                            type: object
+                          value:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
+                        type: object
+                      description: |-
+                        Vars describes the unique values ​​of the VirtualMachine
+                        corresponding to the variables in the AnsiblePlaybookTemplate.
+                      type: object
+                    virtualMachine:
                       properties:
-                        isYaml:
-                          description: IsYaml determines whether the string in IntOrStringStore
-                            is a yaml string
-                          type: boolean
-                        reference:
-                          properties:
-                            fieldPath:
-                              type: string
-                            group:
-                              type: string
-                            kind:
-                              type: string
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                            version:
-                              type: string
-                          required:
-                          - fieldPath
-                          - kind
-                          - name
-                          - namespace
-                          type: object
-                        value:
+                        apiVersion:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        resourceVersion:
+                          type: string
+                        uid:
+                          description: |-
+                            UID is a type that holds unique ID values, including UUIDs.  Because we
+                            don't ONLY use UUIDs, this is an alias to string.  Being a type captures
+                            intent and helps make sure that UIDs and names do not get conflated.
+                          type: string
+                      type: object
+                  required:
+                  - virtualMachine
+                  type: object
+                type: array
+              maxRetryTimes:
+                description: Nil or Non-positive number means unlimited.
+                format: int32
+                type: integer
+              playbookTemplate:
+                description: PlaybookTemplate describe the ansible playbook
+                properties:
+                  files:
+                    description: Files describe the associated file tree and file
+                      content which should be in json format.
+                    type: string
+                  playbook:
+                    description: Playbook describe the main content of absible playbook
+                      which should be in yaml format.
+                    type: string
+                  requirements:
+                    description: Requirements describe the source of roles dependent
+                      on Playbook
+                    type: string
+                  vars:
+                    description: Vars describe the vars to apply this ansible playbook.
+                    items:
+                      properties:
+                        default:
                           anyOf:
                           - type: integer
                           - type: string
-                          type: object
+                          description: |-
+                            Default describe the default value of this variable.
+                            If it is empty, Required should be true.
                           x-kubernetes-int-or-string: true
-                      type: object
-                    description: Vars describes the unique values ​​of the VirtualMachine
-                      corresponding to the variables in the AnsiblePlaybookTemplate.
-                    type: object
-                  virtualMachine:
-                    properties:
-                      apiVersion:
-                        type: string
-                      kind:
-                        type: string
-                      name:
-                        type: string
-                      namespace:
-                        type: string
-                      resourceVersion:
-                        type: string
-                      uid:
-                        description: UID is a type that holds unique ID values, including
-                          UUIDs.  Because we don't ONLY use UUIDs, this is an alias
-                          to string.  Being a type captures intent and helps make
-                          sure that UIDs and names do not get conflated.
-                        type: string
-                    type: object
-                required:
-                - virtualMachine
-                type: object
-              type: array
-            maxRetryTimes:
-              description: Nil or Non-positive number means unlimited.
-              format: int32
-              type: integer
-            playbookTemplate:
-              description: PlaybookTemplate describe the ansible playbook
-              properties:
-                files:
-                  description: Files describe the associated file tree and file content
-                    which should be in json format.
-                  type: string
-                playbook:
-                  description: Playbook describe the main content of absible playbook
-                    which should be in yaml format.
-                  type: string
-                requirements:
-                  description: Requirements describe the source of roles dependent
-                    on Playbook
-                  type: string
-                vars:
-                  description: Vars describe the vars to apply this ansible playbook.
-                  items:
-                    properties:
-                      default:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Default describe the default value of this variable.
-                          If it is empty, Required should be true.
-                        type: object
-                        x-kubernetes-int-or-string: true
-                      name:
-                        type: string
+                        name:
+                          type: string
+                        required:
+                          description: Required indicates whether this variable is
+                            required.
+                          type: boolean
                       required:
-                        description: Required indicates whether this variable is required.
-                        type: boolean
-                    required:
-                    - name
-                    type: object
-                  type: array
-              required:
-              - playbook
-              type: object
-            playbookTemplateRef:
-              description: PlaybookTemplateRef specifies the AnsiblePlaybookTemplate.
-              properties:
-                name:
-                  type: string
-              type: object
-            vars:
-              additionalProperties:
-                properties:
-                  isYaml:
-                    description: IsYaml determines whether the string in IntOrStringStore
-                      is a yaml string
-                    type: boolean
-                  reference:
-                    properties:
-                      fieldPath:
-                        type: string
-                      group:
-                        type: string
-                      kind:
-                        type: string
-                      name:
-                        type: string
-                      namespace:
-                        type: string
-                      version:
-                        type: string
-                    required:
-                    - fieldPath
-                    - kind
-                    - name
-                    - namespace
-                    type: object
-                  value:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    type: object
-                    x-kubernetes-int-or-string: true
+                      - name
+                      type: object
+                    type: array
+                required:
+                - playbook
                 type: object
-              description: Vars describe the public value about Vars in AnsiblePlaybookTemplate.
-              type: object
-          required:
-          - inventory
-          type: object
-        status:
-          description: AnsiblePlaybookStatus defines the observed state of AnsiblePlaybook
-          properties:
-            externalInfo:
-              properties:
-                action:
-                  description: Action indicate the latest action for external vm.
-                  type: string
-                id:
-                  type: string
-                output:
-                  type: string
-                status:
-                  type: string
-              type: object
-            phase:
-              description: ResourcePhase is a label for the condition of a resource
-                at the current time
-              type: string
-            reason:
-              description: A human readable message indicating details about why resource
-                is in this phase.
-              type: string
-            tryTimes:
-              description: TryTimes record the continuous try times.
-              format: int32
-              type: integer
-          required:
-          - tryTimes
-          type: object
-      type: object
-  version: v1
-  versions:
-  - name: v1
+              playbookTemplateRef:
+                description: PlaybookTemplateRef specifies the AnsiblePlaybookTemplate.
+                properties:
+                  name:
+                    type: string
+                type: object
+              vars:
+                additionalProperties:
+                  properties:
+                    isYaml:
+                      description: IsYaml determines whether the string in IntOrStringStore
+                        is a yaml string
+                      type: boolean
+                    reference:
+                      properties:
+                        fieldPath:
+                          type: string
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - fieldPath
+                      - kind
+                      - name
+                      - namespace
+                      type: object
+                    value:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
+                  type: object
+                description: Vars describe the public value about Vars in AnsiblePlaybookTemplate.
+                type: object
+            required:
+            - inventory
+            type: object
+          status:
+            description: AnsiblePlaybookStatus defines the observed state of AnsiblePlaybook
+            properties:
+              externalInfo:
+                properties:
+                  action:
+                    description: Action indicate the latest action for external vm.
+                    type: string
+                  id:
+                    type: string
+                  output:
+                    type: string
+                  status:
+                    type: string
+                type: object
+              phase:
+                description: ResourcePhase is a label for the condition of a resource
+                  at the current time
+                type: string
+              reason:
+                description: A human readable message indicating details about why
+                  resource is in this phase.
+                type: string
+              tryTimes:
+                description: TryTimes record the continuous try times.
+                format: int32
+                type: integer
+            required:
+            - tryTimes
+            type: object
+        type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
+    subresources:
+      status: {}

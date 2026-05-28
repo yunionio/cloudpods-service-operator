@@ -25,7 +25,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud-service-operator/pkg/options"
@@ -44,8 +43,7 @@ type AnsiblePlaybookReconciler struct {
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=virtualmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=onecloud.yunion.io,resources=ansibleplaybooktemplates,verbs=get;list;watch;create;update;patch;delete
 
-func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *AnsiblePlaybookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	var ansiblePlaybook onecloudv1.AnsiblePlaybook
 	if err := r.Get(ctx, req.NamespacedName, &ansiblePlaybook); err != nil {
@@ -174,7 +172,7 @@ func (r *AnsiblePlaybookReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 					continue
 				}
 				if temVar.Default != nil {
-					vars[temVar.Name] = temVar.Default.Interface()
+					vars[temVar.Name] = onecloudv1.IntOrString{*temVar.Default}.Interface()
 					continue
 				}
 			}
@@ -276,17 +274,12 @@ func (r *AnsiblePlaybookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(ap).
 		Watches(
-			&source.Kind{Type: &onecloudv1.VirtualMachine{}},
-			&handler.EnqueueRequestForOwner{
-				OwnerType:    ap,
-				IsController: false,
-			},
+			&onecloudv1.VirtualMachine{},
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), ap),
 		).
 		Watches(
-			&source.Kind{Type: &onecloudv1.AnsiblePlaybookTemplate{}},
-			&handler.EnqueueRequestForOwner{
-				OwnerType:    ap,
-				IsController: false,
-			}).
+			&onecloudv1.AnsiblePlaybookTemplate{},
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), ap),
+		).
 		Complete(r)
 }
