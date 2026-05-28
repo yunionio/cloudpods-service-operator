@@ -79,14 +79,18 @@ func (fr *ObjectFieldReference) Value(ctx context.Context) (interface{}, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "scheme.New")
 	}
-	err = clienti.Get(ctx, fr.NamespacedName(), obj)
+	co, ok := obj.(client.Object)
+	if !ok {
+		return nil, errors.Errorf("%s is not a client.Object", fr.GroupVersionKind())
+	}
+	err = clienti.Get(ctx, fr.NamespacedName(), co)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "client.Get")
 	}
-	value, err := lookup.LookupString(obj, fr.FieldPath)
+	value, err := lookup.LookupString(co, fr.FieldPath)
 	if err != nil {
 		if err == lookup.ErrIndexOutOfRange {
 			return nil, nil
