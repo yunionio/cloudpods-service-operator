@@ -17,6 +17,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/go-logr/logr"
 
@@ -72,7 +73,12 @@ func (an AnsiblePlaybook) create(ctx context.Context, hosts []AnsiblePlaybookHos
 	// build inventory
 	params := jsonutils.NewDict()
 	params.Set("playbook", jsonutils.NewString(apt.Spec.Playbook))
-	params.Set("files", jsonutils.NewString(apt.Spec.Files))
+	// OneCloud ansible DB requires files to be non-empty JSON (no default value).
+	files := apt.Spec.Files
+	if files == "" {
+		files = "{}"
+	}
+	params.Set("files", jsonutils.NewString(files))
 	params.Set("requirements", jsonutils.NewString(apt.Spec.Requirements))
 
 	args := make([]interface{}, 0, len(commonVars)*2)
@@ -87,6 +93,7 @@ func (an AnsiblePlaybook) create(ctx context.Context, hosts []AnsiblePlaybookHos
 	params.Set("inventory", jsonutils.NewString(inv.String()))
 
 	params.Set("generate_name", jsonutils.NewString(ap.Name))
+	log.Printf("===create ansible playbook params: %s", params.PrettyString())
 	_, extInfo, err := RequestAP.Operation(OperCreate).Apply(ctx, "", params)
 	return extInfo, err
 }
@@ -160,10 +167,12 @@ func (an AnsiblePlaybook) apHosts(host AnsiblePlaybookHost) *ansiblev2.Host {
 	default:
 		// noway
 	}
-	user := "root"
-	if host.VM.Spec.VmConfig.Hypervisor != "kvm" {
-		user = "cloudroot"
-	}
+	// user := "root"
+	// if host.VM.Spec.VmConfig.Hypervisor != "kvm" {
+	// 	user = "cloudroot"
+	// }
+	// always use cloudroot
+	user := "cloudroot"
 	vars := map[string]interface{}{
 		"ansible_user": user,
 		"ansible_host": ip,

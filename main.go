@@ -23,6 +23,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	onecloudv1 "yunion.io/x/onecloud-service-operator/api/v1"
 	"yunion.io/x/onecloud-service-operator/controllers"
@@ -52,10 +53,12 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: "127.0.0.1:8080",
-		Port:               options.Options.WebhookPort,
-		LeaderElection:     options.Options.EnableLeaderElection,
-		LeaderElectionID:   "7ddf82e9.yunion.io",
-		SyncPeriod:         &sp,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port: options.Options.WebhookPort,
+		}),
+		LeaderElection:   options.Options.EnableLeaderElection,
+		LeaderElectionID: "7ddf82e9.yunion.io",
+		SyncPeriod:       &sp,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
